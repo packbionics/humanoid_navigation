@@ -8,16 +8,15 @@ project(footstep_planner)
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS 
-  roscpp
-  rospy
+  rclcpp
+  rclpy
   actionlib
-  rosconsole
   sensor_msgs
   geometry_msgs
   nav_msgs
   visualization_msgs
   humanoid_nav_msgs
-  tf
+  tf2
   angles
   gridmap_2d
   map_server
@@ -45,25 +44,6 @@ link_directories(${SBPL_LIBRARY_DIRS})
 ################################################################################
 # Declare catkin specific configuration to be passed to dependent projects
 ################################################################################
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS
-    roscpp
-    rospy
-    actionlib
-    rosconsole
-    sensor_msgs
-    geometry_msgs
-    nav_msgs
-    visualization_msgs
-    humanoid_nav_msgs
-    tf
-    angles
-    gridmap_2d
-    map_server
-  DEPENDS OpenCV SBPL
-)
 
 ################################################################################
 # Build
@@ -90,46 +70,45 @@ set(FOOTSTEP_PLANNER_FILES
 )
 
 add_library(${PROJECT_NAME} ${FOOTSTEP_PLANNER_FILES})
-add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${SBPL_LIBRARIES})
+add_dependencies(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}  ${SBPL_LIBRARIES})
 
 add_executable(footstep_planner_node src/footstep_planner.cpp)
 add_dependencies(footstep_planner_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES})
 
 add_executable(footstep_planner_walls src/footstep_planner_walls.cpp)
-add_dependencies(footstep_planner_walls ${catkin_EXPORTED_TARGETS})
+add_dependencies(footstep_planner_walls )
 target_link_libraries(footstep_planner_walls ${PROJECT_NAME} ${OpenCV_LIBRARIES} ${SBPL_LIBRARIES})
 
 add_executable(footstep_navigation_node src/footstep_navigation.cpp)
-add_dependencies(footstep_navigation_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(footstep_navigation_node $)
 target_link_libraries(footstep_navigation_node ${PROJECT_NAME} ${SBPL_LIBRARIES})
 
 ################################################################################
 # Install
 ################################################################################
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS footstep_planner_node footstep_planner_walls footstep_navigation_node
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  RUNTIME DESTINATION lib/${PROJECT NAME}
 )
 
 install(PROGRAMS
   scripts/corrected_initialpose.py
   scripts/plan_footsteps.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+  DESTINATION lib/${PROJECT_NAME}
 
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  DESTINATION share/include/${PROJECT_NAME}
 )
 
 install(DIRECTORY config launch maps 
-	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+	DESTINATION share/include/${PROJECT_NAME}
 )
 
 ################################################################################
