@@ -19,38 +19,33 @@
  */
 
 #include <footstep_planner/FootstepPlanner.h>
-#include <humanoid_nav_msgs/ClipFootstep.h>
+#include <humanoid_nav_msgs/srv/clip_footstep.hpp>
 
 
 using gridmap_2d::GridMap2D;
-using gridmap_2d::GridMap2DPtr;
-
 
 namespace footstep_planner
 {
 FootstepPlanner::FootstepPlanner()
-: ivStartPoseSetUp(false),
+: rclcpp::Node("footstep_planner"),
+  ivStartPoseSetUp(false),
   ivGoalPoseSetUp(false),
   ivLastMarkerMsgSize(0),
   ivPathCost(0),
   ivMarkerNamespace("")
 {
-  // private NodeHandle for parameters and private messages (debug / info)
-  ros::NodeHandle nh_private("~");
-  ros::NodeHandle nh_public;
-
   // ..publishers
-  ivExpandedStatesVisPub = nh_private.advertise<
-      sensor_msgs::PointCloud>("expanded_states", 1);
-  ivRandomStatesVisPub = nh_private.advertise<
-      sensor_msgs::PointCloud>("random_states", 1);
-  ivFootstepPathVisPub = nh_private.advertise<
-      visualization_msgs::MarkerArray>("footsteps_array", 1);
-  ivHeuristicPathVisPub = nh_private.advertise<
-      nav_msgs::Path>("heuristic_path", 1);
-  ivPathVisPub = nh_private.advertise<nav_msgs::Path>("path", 1);
-  ivStartPoseVisPub = nh_private.advertise<
-      geometry_msgs::PoseStamped>("start", 1);
+  ivExpandedStatesVisPub = this->create_publisher<
+      sensor_msgs::msg::PointCloud2>("expanded_states", 1);
+  ivRandomStatesVisPub = this->create_publisher<
+      sensor_msgs::msg::PointCloud2>("random_states", 1);
+  ivFootstepPathVisPub = this->create_publisher<
+      visualization_msgs::msg::MarkerArray>("footsteps_array", 1);
+  ivHeuristicPathVisPub = this->create_publisher<
+      nav_msgs::msg::Path>("heuristic_path", 1);
+  ivPathVisPub = this->create_publisher<nav_msgs::msg::Path>("path", 1);
+  ivStartPoseVisPub = this->create_publisher<
+      geometry_msgs::msg::PoseStamped>("start", 1);
 
   std::string heuristic_type;
   double diff_angle_cost;
@@ -117,17 +112,17 @@ FootstepPlanner::FootstepPlanner()
   nh_private.getParam("footsteps/y", footsteps_y);
   nh_private.getParam("footsteps/theta", footsteps_theta);
   if (footsteps_x.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    ROS_ERROR("Error reading footsteps/x from config file.");
+    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/x from config file.");
   if (footsteps_y.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    ROS_ERROR("Error reading footsteps/y from config file.");
+    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/y from config file.");
   if (footsteps_theta.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    ROS_ERROR("Error reading footsteps/theta from config file.");
+    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/theta from config file.");
   int size_x = footsteps_x.size();
   int size_y = footsteps_y.size();
   int size_t = footsteps_theta.size();
   if (size_x != size_y || size_x != size_t)
   {
-    ROS_ERROR("Footstep parameterization has different sizes for x/y/theta. "
+    RCLCPP_ERROR(this->get_logger(), "Footstep parameterization has different sizes for x/y/theta. "
               "Exit!");
     exit(2);
   }
@@ -158,12 +153,12 @@ FootstepPlanner::FootstepPlanner()
   nh_private.getParam("step_range/x", step_range_x);
   nh_private.getParam("step_range/y", step_range_y);
   if (step_range_x.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    ROS_ERROR("Error reading footsteps/x from config file.");
+    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/x from config file.");
   if (step_range_y.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    ROS_ERROR("Error reading footsteps/y from config file.");
+    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/y from config file.");
   if (step_range_x.size() != step_range_y.size())
   {
-    ROS_ERROR("Step range points have different size. Exit!");
+    RCLCPP_ERROR(this->get_logger(), "Step range points have different size. Exit!");
     exit(2);
   }
   // create step range
@@ -195,7 +190,7 @@ FootstepPlanner::FootstepPlanner()
     h.reset(
         new EuclideanHeuristic(ivEnvironmentParams.cell_size,
                                ivEnvironmentParams.num_angle_bins));
-    ROS_INFO("FootstepPlanner heuristic: euclidean distance");
+    RCLCPP_INFO(this->get_logger(), ("FootstepPlanner heuristic: euclidean distance");
   }
   else if(heuristic_type == "EuclStepCostHeuristic")
   {
@@ -205,7 +200,7 @@ FootstepPlanner::FootstepPlanner()
                                   ivEnvironmentParams.step_cost,
                                   diff_angle_cost,
                                   max_step_width));
-    ROS_INFO("FootstepPlanner heuristic: euclidean distance with step costs");
+    RCLCPP_INFO(this->get_logger(), ("FootstepPlanner heuristic: euclidean distance with step costs");
   }
   else if (heuristic_type == "PathCostHeuristic")
   {
@@ -224,7 +219,7 @@ FootstepPlanner::FootstepPlanner()
                               diff_angle_cost,
                               max_step_width,
                               foot_incircle));
-    ROS_INFO("FootstepPlanner heuristic: 2D path euclidean distance with step "
+    RCLCPP_INFO(this->get_logger(), ("FootstepPlanner heuristic: 2D path euclidean distance with step "
              "costs");
 
     // keep a local ptr for visualization
@@ -247,7 +242,7 @@ FootstepPlanner::FootstepPlanner()
       ivPlannerType == "ADPlanner"  ||
       ivPlannerType == "RSTARPlanner" )
   {
-    ROS_INFO_STREAM("Planning with " << ivPlannerType);
+    RCLCPP_INFO(this->get_logger(), _STREAM("Planning with " << ivPlannerType);
   }
   else
   {
@@ -257,11 +252,11 @@ FootstepPlanner::FootstepPlanner()
   }
   if (ivEnvironmentParams.forward_search)
   {
-    ROS_INFO_STREAM("Search direction: forward planning");
+    RCLCPP_INFO(this->get_logger(), _STREAM("Search direction: forward planning");
   }
   else
   {
-    ROS_INFO_STREAM("Search direction: backward planning");
+    RCLCPP_INFO(this->get_logger(), _STREAM("Search direction: backward planning");
   }
   setPlanner();
 }
@@ -333,19 +328,19 @@ FootstepPlanner::run()
   // set up SBPL
   if (ivPlannerPtr->set_start(mdp_config.startstateid) == 0)
   {
-    ROS_ERROR("Failed to set start state.");
+    RCLCPP_ERROR(this->get_logger(), "Failed to set start state.");
     return false;
   }
   if (ivPlannerPtr->set_goal(mdp_config.goalstateid) == 0)
   {
-    ROS_ERROR("Failed to set goal state\n");
+    RCLCPP_ERROR(this->get_logger(), "Failed to set goal state\n");
     return false;
   }
 
   ivPlannerPtr->set_initialsolution_eps(ivInitialEpsilon);
   ivPlannerPtr->set_search_mode(ivSearchUntilFirstSolution);
 
-  ROS_INFO("Start planning (max time: %f, initial eps: %f (%f))\n",
+  RCLCPP_INFO(this->get_logger(), ("Start planning (max time: %f, initial eps: %f (%f))\n",
            ivMaxSearchTime, ivInitialEpsilon,
            ivPlannerPtr->get_initial_eps());
   int path_cost;
@@ -357,7 +352,7 @@ FootstepPlanner::run()
   }
   catch (const SBPL_Exception& e)
   {
-    // ROS_ERROR("SBPL planning failed (%s)", e.what());
+    // RCLCPP_ERROR(this->get_logger(), "SBPL planning failed (%s)", e.what());
     return false;
   }
   ivPathCost = double(path_cost) / FootstepPlannerEnvironment::cvMmScale;
@@ -368,17 +363,17 @@ FootstepPlanner::run()
     if (!path_is_new)
       ROS_WARN("Solution found by SBPL is the same as the old solution. This could indicate that replanning failed.");
 
-    ROS_INFO("Solution of size %zu found after %f s",
+    RCLCPP_INFO(this->get_logger(), ("Solution of size %zu found after %f s",
              solution_state_ids.size(),
              (ros::WallTime::now()-startTime).toSec());
 
     if (extractPath(solution_state_ids))
     {
-      ROS_INFO("Expanded states: %i total / %i new",
+      RCLCPP_INFO(this->get_logger(), ("Expanded states: %i total / %i new",
                ivPlannerEnvironmentPtr->getNumExpandedStates(),
                ivPlannerPtr->get_n_expands());
-      ROS_INFO("Final eps: %f", ivPlannerPtr->get_final_epsilon());
-      ROS_INFO("Path cost: %f (%i)\n", ivPathCost, path_cost);
+      RCLCPP_INFO(this->get_logger(), ("Final eps: %f", ivPlannerPtr->get_final_epsilon());
+      RCLCPP_INFO(this->get_logger(), ("Path cost: %f (%i)\n", ivPathCost, path_cost);
 
       ivPlanningStatesIds = solution_state_ids;
 
@@ -391,7 +386,7 @@ FootstepPlanner::run()
     }
     else
     {
-      ROS_ERROR("extracting path failed\n\n");
+      RCLCPP_ERROR(this->get_logger(), "extracting path failed\n\n");
       return false;
     }
   }
@@ -400,7 +395,7 @@ FootstepPlanner::run()
     broadcastExpandedNodesVis();
     broadcastRandomNodesVis();
 
-    ROS_ERROR("No solution found");
+    RCLCPP_ERROR(this->get_logger(), "No solution found");
     return false;
   }
 }
@@ -460,7 +455,7 @@ FootstepPlanner::extractPath(const std::vector<int>& state_ids)
 void
 FootstepPlanner::reset()
 {
-  ROS_INFO("Resetting planner");
+  RCLCPP_INFO(this->get_logger(), ("Resetting planner");
   // reset the previously calculated paths
   ivPath.clear();
   ivPlanningStatesIds.clear();
@@ -477,7 +472,7 @@ FootstepPlanner::reset()
 void
 FootstepPlanner::resetTotally()
 {
-  ROS_INFO("Resetting planner and environment");
+  RCLCPP_INFO(this->get_logger(), ("Resetting planner and environment");
   // reset the previously calculated paths
   ivPath.clear();
   ivPlanningStatesIds.clear();
@@ -493,12 +488,12 @@ FootstepPlanner::plan(bool force_new_plan)
 {
   if (!ivMapPtr)
   {
-    ROS_ERROR("FootstepPlanner has no map for planning yet.");
+    RCLCPP_ERROR(this->get_logger(), "FootstepPlanner has no map for planning yet.");
     return false;
   }
   if (!ivGoalPoseSetUp || !ivStartPoseSetUp)
   {
-    ROS_ERROR("FootstepPlanner has not set the start and/or goal pose "
+    RCLCPP_ERROR(this->get_logger(), "FootstepPlanner has not set the start and/or goal pose "
               "yet.");
     return false;
   }
@@ -606,7 +601,7 @@ FootstepPlanner::extractFootstepsSrv(std::vector<humanoid_nav_msgs::StepTarget> 
       foot.leg = humanoid_nav_msgs::StepTarget::right;
     else
     {
-      ROS_ERROR("Footstep pose at (%f, %f, %f) is set to NOLEG!",
+      RCLCPP_ERROR(this->get_logger(), "Footstep pose at (%f, %f, %f) is set to NOLEG!",
                 path_iter->getX(), path_iter->getY(),
                 path_iter->getTheta());
       continue;
@@ -681,7 +676,7 @@ FootstepPlanner::setGoal(float x, float y, float theta)
 {
   if (!ivMapPtr)
   {
-    ROS_ERROR("Distance map hasn't been initialized yet.");
+    RCLCPP_ERROR(this->get_logger(), "Distance map hasn't been initialized yet.");
     return false;
   }
 
@@ -692,7 +687,7 @@ FootstepPlanner::setGoal(float x, float y, float theta)
   if (ivPlannerEnvironmentPtr->occupied(foot_left) ||
       ivPlannerEnvironmentPtr->occupied(foot_right))
   {
-    ROS_ERROR("Goal pose at (%f %f %f) not accessible.", x, y, theta);
+    RCLCPP_ERROR(this->get_logger(), "Goal pose at (%f %f %f) not accessible.", x, y, theta);
     ivGoalPoseSetUp = false;
     return false;
   }
@@ -700,7 +695,7 @@ FootstepPlanner::setGoal(float x, float y, float theta)
   ivGoalFootRight = foot_right;
 
   ivGoalPoseSetUp = true;
-  ROS_INFO("Goal pose set to (%f %f %f)", x, y, theta);
+  RCLCPP_INFO(this->get_logger(), ("Goal pose set to (%f %f %f)", x, y, theta);
 
   return true;
 }
@@ -755,7 +750,7 @@ FootstepPlanner::setStart(float x, float y, float theta)
 {
   if (!ivMapPtr)
   {
-    ROS_ERROR("Distance map hasn't been initialized yet.");
+    RCLCPP_ERROR(this->get_logger(), "Distance map hasn't been initialized yet.");
     return false;
   }
 
@@ -765,9 +760,9 @@ FootstepPlanner::setStart(float x, float y, float theta)
 
   bool success = setStart(foot_left, foot_right);
   if (success)
-    ROS_INFO("Start pose set to (%f %f %f)", x, y, theta);
+    RCLCPP_INFO(this->get_logger(), ("Start pose set to (%f %f %f)", x, y, theta);
   else
-    ROS_ERROR("Start pose (%f %f %f) not accessible.", x, y, theta);
+    RCLCPP_ERROR(this->get_logger(), "Start pose (%f %f %f) not accessible.", x, y, theta);
 
   // publish visualization:
   geometry_msgs::PoseStamped start_pose;
@@ -808,7 +803,7 @@ FootstepPlanner::updateMap(const GridMap2DPtr map)
 void
 FootstepPlanner::updateEnvironment(const GridMap2DPtr old_map)
 {
-  ROS_INFO("Reseting the planning environment.");
+  RCLCPP_INFO(this->get_logger(), ("Reseting the planning environment.");
   // reset environment
   resetTotally();
   // set the new map
@@ -826,7 +821,7 @@ FootstepPlanner::updateEnvironment(const GridMap2DPtr old_map)
   //            ivMapPtr->size().height == old_map->size().height &&
   //            ivMapPtr->size().width == old_map->size().width)
   //        {
-  //            ROS_INFO("Received an updated map => change detection");
+  //            RCLCPP_INFO(this->get_logger(), ("Received an updated map => change detection");
   //
   //            std::vector<State2> changed_states;
   //            cv::Mat changed_cells;
@@ -879,15 +874,15 @@ FootstepPlanner::updateEnvironment(const GridMap2DPtr old_map)
   //
   //            if (num_changed_cells == 0)
   //            {
-  //                ROS_INFO("old map equals new map; no replanning necessary");
+  //                RCLCPP_INFO(this->get_logger(), ("old map equals new map; no replanning necessary");
   //                return;
   //            }
   //
-  //            ROS_INFO("%d changed map cells found", num_changed_cells);
+  //            RCLCPP_INFO(this->get_logger(), ("%d changed map cells found", num_changed_cells);
   //            if (num_changed_cells <= ivChangedCellsLimit)
   //            {
   //                // update planer
-  //                ROS_INFO("Use old information in new planning taks");
+  //                RCLCPP_INFO(this->get_logger(), ("Use old information in new planning taks");
   //
   //                std::vector<int> neighbour_ids;
   //                if (ivForwardSearch)
@@ -903,7 +898,7 @@ FootstepPlanner::updateEnvironment(const GridMap2DPtr old_map)
   //            }
   //            else
   //            {
-  //                ROS_INFO("Reset old information in new planning task");
+  //                RCLCPP_INFO(this->get_logger(), ("Reset old information in new planning task");
   //                // reset planner
   //                ivPlannerEnvironmentPtr->reset();
   //                setPlanner();
@@ -912,7 +907,7 @@ FootstepPlanner::updateEnvironment(const GridMap2DPtr old_map)
   //        }
   //        else
   //        {
-  //            ROS_INFO("Reset old information in new planning task");
+  //            RCLCPP_INFO(this->get_logger(), ("Reset old information in new planning task");
   //            // reset planner
   //            ivPlannerEnvironmentPtr->reset();
   //            setPlanner();
@@ -955,8 +950,8 @@ FootstepPlanner::pathIsNew(const std::vector<int>& new_path)
 void
 FootstepPlanner::clearFootstepPathVis(unsigned num_footsteps)
 {
-  visualization_msgs::Marker marker;
-  visualization_msgs::MarkerArray marker_msg;
+  visualization_msgs::msg::Marker marker;
+  visualization_msgs::msg::MarkerArray marker_msg;
 
   marker.header.stamp = ros::Time::now();
   marker.header.frame_id = ivMapPtr->getFrameID();
@@ -969,7 +964,7 @@ FootstepPlanner::clearFootstepPathVis(unsigned num_footsteps)
   {
     marker.ns = ivMarkerNamespace;
     marker.id = i;
-    marker.action = visualization_msgs::Marker::DELETE;
+    marker.action = visualization_msgs::msg::Marker::DELETE;
 
     marker_msg.markers.push_back(marker);
   }
@@ -983,7 +978,7 @@ FootstepPlanner::broadcastExpandedNodesVis()
 {
   if (ivExpandedStatesVisPub.getNumSubscribers() > 0)
   {
-    sensor_msgs::PointCloud cloud_msg;
+    sensor_msgs::msg::PointCloud2 cloud_msg;
     geometry_msgs::Point32 point;
     std::vector<geometry_msgs::Point32> points;
 
@@ -1015,7 +1010,7 @@ FootstepPlanner::broadcastFootstepPathVis()
 {
   if (getPathSize() == 0)
   {
-    ROS_INFO("no path has been extracted yet");
+    RCLCPP_INFO(this->get_logger(), ("no path has been extracted yet");
     return;
   }
 
@@ -1058,7 +1053,7 @@ void
 FootstepPlanner::broadcastRandomNodesVis()
 {
   if (ivRandomStatesVisPub.getNumSubscribers() > 0){
-    sensor_msgs::PointCloud cloud_msg;
+    sensor_msgs::msg::PointCloud2 cloud_msg;
     geometry_msgs::Point32 point;
     std::vector<geometry_msgs::Point32> points;
     visualization_msgs::Marker marker;
@@ -1101,12 +1096,12 @@ FootstepPlanner::broadcastPathVis()
 {
   if (getPathSize() == 0)
   {
-    ROS_INFO("no path has been extracted yet");
+    RCLCPP_INFO(this->get_logger(), ("no path has been extracted yet");
     return;
   }
 
-  nav_msgs::Path path_msg;
-  geometry_msgs::PoseStamped state;
+  nav_msgs::msg::Path path_msg;
+  geometry_msgs::msg::PoseStamped state;
 
   state.header.stamp = ros::Time::now();
   state.header.frame_id = ivMapPtr->getFrameID();
@@ -1126,13 +1121,13 @@ FootstepPlanner::broadcastPathVis()
 
 void
 FootstepPlanner::footPoseToMarker(const State& foot_pose,
-                                  visualization_msgs::Marker* marker)
+                                  std::shared_ptr<visualization_msgs::Marker> marker)
 {
   marker->header.stamp = ros::Time::now();
   marker->header.frame_id = ivMapPtr->getFrameID();
   marker->ns = ivMarkerNamespace;
-  marker->type = visualization_msgs::Marker::CUBE;
-  marker->action = visualization_msgs::Marker::ADD;
+  marker->type = visualization_msgs::msg::Marker::CUBE;
+  marker->action = visualization_msgs::msg::Marker::ADD;
 
   float cos_theta = cos(foot_pose.getTheta());
   float sin_theta = sin(foot_pose.getTheta());

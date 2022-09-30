@@ -315,15 +315,14 @@ FootstepPlannerEnvironment::getState(unsigned int id, State* s)
 }
 
 
-void
-FootstepPlannerEnvironment::updateMap(gridmap_2d::GridMap2DPtr map)
+void FootstepPlannerEnvironment::updateMap(std::shared_ptr<gridmap_2d::GridMap2D> map)
 {
   ivMapPtr.reset();
   ivMapPtr = map;
 
   if (ivHeuristicConstPtr->getHeuristicType() == Heuristic::PATH_COST)
   {
-    boost::shared_ptr<PathCostHeuristic> h =
+    std::shared_ptr<PathCostHeuristic> h =
         boost::dynamic_pointer_cast<PathCostHeuristic>(
             ivHeuristicConstPtr);
     h->updateMap(map);
@@ -343,11 +342,11 @@ FootstepPlannerEnvironment::updateHeuristicValues()
   if (!ivHeuristicExpired)
     return;
 
-  ROS_INFO("Updating the heuristic values.");
+  // ROS_INFO("Updating the heuristic values.");
 
   if (ivHeuristicConstPtr->getHeuristicType() == Heuristic::PATH_COST)
   {
-    boost::shared_ptr<PathCostHeuristic> h =
+    std::shared_ptr<PathCostHeuristic> h =
         boost::dynamic_pointer_cast<PathCostHeuristic>(
             ivHeuristicConstPtr);
     MDPConfig MDPCfg;
@@ -363,12 +362,12 @@ FootstepPlannerEnvironment::updateHeuristicValues()
       success = h->calculateDistances(*goal, *start);
     if (!success)
     {
-      ROS_ERROR("Failed to calculate path cost heuristic.");
+      // ROS_ERROR("Failed to calculate path cost heuristic.");
       exit(1);
     }
   }
 
-  ROS_DEBUG("Finished updating the heuristic values.");
+  // ROS_DEBUG("Finished updating the heuristic values.");
   ivHeuristicExpired = false;
 }
 
@@ -447,17 +446,17 @@ FootstepPlannerEnvironment::reachable(const PlanningState& from,
       return false;
   }
 
-  tf::Transform step =
-    tf::Pose(
-      tf::createQuaternionFromYaw(
+  tf2::Transform step =
+    tf2::Pose(
+      tf2::createQuaternionFromYaw(
         angle_cell_2_state(from.getTheta(), ivNumAngleBins)),
-      tf::Point(cell_2_state(from.getX(), ivCellSize),
+      tf2::Point(cell_2_state(from.getX(), ivCellSize),
                 cell_2_state(from.getY(), ivCellSize),
                 0.0)).inverse() *
-    tf::Pose(
-      tf::createQuaternionFromYaw(
+    tf2::Pose(
+      tf2::createQuaternionFromYaw(
         angle_cell_2_state(from.getTheta(), ivNumAngleBins)),
-      tf::Point(cell_2_state(to.getX(), ivCellSize),
+      tf2::Point(cell_2_state(to.getX(), ivCellSize),
                 cell_2_state(to.getY(), ivCellSize),
                 0.0));
   int footstep_x = disc_val(step.getOrigin().x(), ivCellSize);
@@ -1095,13 +1094,13 @@ void FootstepPlannerEnvironment::GetRandomNeighs(const PlanningState* currentSta
   }
 
   if (NeighIDV->size() == 0){
-    ROS_WARN("Could not create any random neighbor nodes (%d attempts) from id %d (%d %d)",
-             nAttempts, currentState->getId(), X, Y);
+    // ROS_WARN("Could not create any random neighbor nodes (%d attempts) from id %d (%d %d)",
+    //          nAttempts, currentState->getId(), X, Y);
   } else
 
-    ROS_DEBUG("Created %zu random neighbors (%d attempts) from id %d "
-        "(%d %d)", NeighIDV->size(), nAttempts, currentState->getId(),
-        X, Y);
+    // ROS_DEBUG("Created %zu random neighbors (%d attempts) from id %d "
+    //     "(%d %d)", NeighIDV->size(), nAttempts, currentState->getId(),
+    //     X, Y);
 }
 
 bool
@@ -1159,8 +1158,8 @@ void
 FootstepPlannerEnvironment::PrintEnv_Config(FILE *fOut)
 {
   // NOTE: implement this if the planner needs to print out configurations
-  ROS_ERROR("FootstepPlanerEnvironment::PrintEnv_Config: Hit "
-      "unimplemented function. Check this!");
+  // ROS_ERROR("FootstepPlanerEnvironment::PrintEnv_Config: Hit "
+  //     "unimplemented function. Check this!");
 }
 
 
@@ -1202,8 +1201,8 @@ FootstepPlannerEnvironment::SetAllActionsandAllOutcomes(CMDPSTATE *state)
   // (predecessors) but most searches do not require this, so it is not
   // necessary to support this
 
-  ROS_ERROR("FootstepPlannerEnvironment::SetAllActionsandAllOutcomes: Hit"
-      " unimplemented function. Check this!");
+  // ROS_ERROR("FootstepPlannerEnvironment::SetAllActionsandAllOutcomes: Hit"
+  //     " unimplemented function. Check this!");
 }
 
 
@@ -1216,8 +1215,8 @@ FootstepPlannerEnvironment::SetAllPreds(CMDPSTATE *state)
   // (predecessors) but most searches do not require this, so it is not
   // necessary to support this
 
-  ROS_ERROR("FootstepPlannerEnvironment::SetAllPreds: Hit unimplemented "
-      "function. Check this!");
+  // ROS_ERROR("FootstepPlannerEnvironment::SetAllPreds: Hit unimplemented "
+  //     "function. Check this!");
 }
 
 

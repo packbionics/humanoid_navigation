@@ -29,7 +29,6 @@
  */
 
 #include "gridmap_2d/GridMap2D.h"
-#include <ros/console.h>
 
 namespace gridmap_2d{
 
@@ -39,7 +38,7 @@ GridMap2D::GridMap2D()
 
 }
 
-GridMap2D::GridMap2D(const nav_msgs::OccupancyGridConstPtr& gridMap, bool unknown_as_obstacle) {
+GridMap2D::GridMap2D(const nav_msgs::msg::OccupancyGrid::SharedPtr& gridMap, bool unknown_as_obstacle) {
 
   setMap(gridMap, unknown_as_obstacle);
 
@@ -59,12 +58,12 @@ GridMap2D::~GridMap2D() {
 }
 
 void GridMap2D::updateDistanceMap(){
-  cv::distanceTransform(m_binaryMap, m_distMap, CV_DIST_L2, CV_DIST_MASK_PRECISE);
+  cv::distanceTransform(m_binaryMap, m_distMap, cv::DIST_L2, cv::DIST_MASK_PRECISE);
   // distance map now contains distance in meters:
   m_distMap = m_distMap * m_mapInfo.resolution;
 }
 
-void GridMap2D::setMap(const nav_msgs::OccupancyGridConstPtr& grid_map, bool unknown_as_obstacle){
+void GridMap2D::setMap(const nav_msgs::msg::OccupancyGrid::SharedPtr& grid_map, bool unknown_as_obstacle){
   m_mapInfo = grid_map->info;
   m_frameId = grid_map->header.frame_id;
   // allocate map structs so that x/y in the world correspond to x/y in the image
@@ -93,14 +92,12 @@ void GridMap2D::setMap(const nav_msgs::OccupancyGridConstPtr& grid_map, bool unk
   }
 
   updateDistanceMap();
-
-  ROS_INFO("GridMap2D created with %d x %d cells at %f resolution.", m_mapInfo.width, m_mapInfo.height, m_mapInfo.resolution);
 }
 
-nav_msgs::OccupancyGrid GridMap2D::toOccupancyGridMsg() const{
-  nav_msgs::OccupancyGrid msg;
+nav_msgs::msg::OccupancyGrid GridMap2D::toOccupancyGridMsg(rclcpp::Time time) const{
+  nav_msgs::msg::OccupancyGrid msg;
   msg.header.frame_id = m_frameId;
-  msg.header.stamp = ros::Time::now();
+  msg.header.stamp = time;
   msg.info = m_mapInfo;
   msg.data.resize(msg.info.height*msg.info.width);
 
@@ -125,18 +122,15 @@ void GridMap2D::setMap(const cv::Mat& binaryMap){
   m_binaryMap = binaryMap.clone();
   m_distMap = cv::Mat(m_binaryMap.size(), CV_32FC1);
 
-  cv::distanceTransform(m_binaryMap, m_distMap, CV_DIST_L2, CV_DIST_MASK_PRECISE);
+  cv::distanceTransform(m_binaryMap, m_distMap, cv::DIST_L2, cv::DIST_MASK_PRECISE);
   // distance map now contains distance in meters:
   m_distMap = m_distMap * m_mapInfo.resolution;
-
-  ROS_INFO("GridMap2D copied from existing cv::Mat with %d x %d cells at %f resolution.", m_mapInfo.width, m_mapInfo.height, m_mapInfo.resolution);
-
 }
 
 void GridMap2D::inflateMap(double inflationRadius){
   m_binaryMap = (m_distMap > inflationRadius );
   // recompute distance map with new binary map:
-  cv::distanceTransform(m_binaryMap, m_distMap, CV_DIST_L2, CV_DIST_MASK_PRECISE);
+  cv::distanceTransform(m_binaryMap, m_distMap, cv::DIST_L2, cv::DIST_MASK_PRECISE);
   m_distMap = m_distMap * m_mapInfo.resolution;
 }
 

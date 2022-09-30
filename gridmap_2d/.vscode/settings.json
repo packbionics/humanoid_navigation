@@ -1,0 +1,13 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/anthony/dev-ws/install/pybullet_ros/lib/python3.10/site-packages",
+        "/home/anthony/dev-ws/install/obstacles/lib/python3.10/site-packages",
+        "/home/anthony/dev-ws/install/jetleg_vision/lib/python3.10/site-packages",
+        "/home/anthony/dev-ws/install/jetleg_description/lib/python3.10/site-packages",
+        "/home/anthony/dev-ws/install/jetleg_control/lib/python3.10/site-packages",
+        "/home/anthony/dev-ws/install/jetleg_bringup/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "cmake.configureOnOpen": true
+}

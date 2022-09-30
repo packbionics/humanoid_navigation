@@ -21,22 +21,26 @@
 #ifndef FOOTSTEP_PLANNER_FOOTSTEPNAVIGATION_H_
 #define FOOTSTEP_PLANNER_FOOTSTEPNAVIGATION_H_
 
-#include <actionlib/client/simple_action_client.h>
+//#include <actionlib/client/simple_action_client.h>
 #include <footstep_planner/FootstepPlanner.h>
 #include <footstep_planner/State.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <humanoid_nav_msgs/ClipFootstep.h>
-#include <humanoid_nav_msgs/ExecFootstepsAction.h>
-#include <humanoid_nav_msgs/ExecFootstepsFeedback.h>
-#include <humanoid_nav_msgs/PlanFootsteps.h>
-#include <humanoid_nav_msgs/StepTargetService.h>
-#include <nav_msgs/Path.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <ros/ros.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+
+#include <humanoid_nav_msgs/srv/clip_footstep.hpp>
+#include <humanoid_nav_msgs/action/exec_footsteps.hpp>
+#include <humanoid_nav_msgs/srv/plan_footsteps.hpp>
+#include <humanoid_nav_msgs/srv/step_target_service.hpp>
+
+#include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2/utils.h>
+#include <tf2/transform_datatypes.h>
+// #include <tf/tf.h>
+// #include <tf/transform_listener.h>
 
 #include <assert.h>
 
@@ -47,14 +51,14 @@ namespace footstep_planner
  * @brief A class to control the performance of a planned footstep path on
  * the NAO robot.
  */
-class FootstepNavigation
+class FootstepNavigation : public rclcpp::Node
 {
 public:
   FootstepNavigation();
   virtual ~FootstepNavigation();
 
   /// @brief Wrapper for FootstepPlanner::setGoal.
-  bool setGoal(const geometry_msgs::PoseStampedConstPtr goal_pose);
+  bool setGoal(const std::shared_ptr<geometry_msgs::msg::PoseStamped> goal_pose);
 
   /// @brief Wrapper for FootstepPlanner::setGoal.
   bool setGoal(float x, float y, float theta);
@@ -65,14 +69,14 @@ public:
    * Subscribed to 'goal'.
    */
   void goalPoseCallback(
-  const geometry_msgs::PoseStampedConstPtr& goal_pose);
+  const std::shared_ptr<geometry_msgs::msg::PoseStamped>& goal_pose);
 
   /**
    * @brief Callback to set the map.
    *
    * Subscribed to 'map'.
    */
-  void mapCallback(const nav_msgs::OccupancyGridConstPtr& occupancy_map);
+  void mapCallback(const std::shared_ptr<nav_msgs::msg::OccupancyGrid> occupancy_map);
 
 protected:
   /**
@@ -114,7 +118,7 @@ protected:
    * @return True if the footstep can be performed by the NAO robot.
    */
   bool getFootstep(const tf::Pose& from, const State& from_planned,
-		               const State& to, humanoid_nav_msgs::StepTarget* footstep);
+		               const State& to, std::shared_ptr<humanoid_nav_msgs::msg::StepTarget> footstep);
 
   /**
    * @brief Extracts the footsteps necessary to perform the calculated
@@ -131,7 +135,7 @@ protected:
    */
   bool getFootstepsFromPath(
       const State& current_support_leg, int starting_step_num,
-      std::vector<humanoid_nav_msgs::StepTarget>& footsteps);
+      std::vector<humanoid_nav_msgs::msg::StepTarget>& footsteps);
 
   /// @brief Updates the robot's current pose.
   bool updateStart();
@@ -164,9 +168,9 @@ protected:
    * a goal request.
    */
   void feedbackCallback(
-  const humanoid_nav_msgs::ExecFootstepsFeedbackConstPtr& fb);
+  const std::shared_ptr<humanoid_nav_msgs::srv::ExecFootstepsFeedback>& fb);
 
-  bool performable(const humanoid_nav_msgs::StepTarget& footstep);
+  bool performable(const humanoid_nav_msgs::msg::StepTarget& footstep);
   bool performable(float step_x, float step_y);
 
   /**
@@ -177,7 +181,7 @@ protected:
    * @return True if the footstep can be performed by the robot (i.e. it
    * is within the robot's max ranges).
    */
-  bool performanceValid(const humanoid_nav_msgs::ClipFootstep& footstep);
+  bool performanceValid(const humanoid_nav_msgs::srv::ClipFootstep& footstep);
 
   /// @return True if both states are equal upon some accuracy.
   bool performanceValid(const State& planned, const State& executed);
@@ -188,14 +192,14 @@ protected:
 
   FootstepPlanner ivPlanner;
 
-  ros::Subscriber ivGridMapSub;
-  ros::Subscriber ivRobotPoseSub;
-  ros::Subscriber ivGoalPoseSub;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid> ivGridMapSub;
+  rclcpp::Subscription ivRobotPoseSub;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped> ivGoalPoseSub;
 
-  ros::ServiceClient ivFootstepSrv;
-  ros::ServiceClient ivClipFootstepSrv;
+  rclcpp::Service<humanoid_nav_msgs::msg::StepTargetService> ivFootstepSrv;
+  rclcpp::Service<humanoid_nav_msgs::ClipFootstep> ivClipFootstepSrv;
 
-  tf::TransformListener ivTransformListener;
+  tf2::TransformListener ivTransformListener;
 
   boost::mutex ivExecutionLock;
 

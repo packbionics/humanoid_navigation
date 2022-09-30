@@ -25,6 +25,8 @@
 #include <gridmap_2d/GridMap2D.h>
 #include <sbpl/headers.h>
 
+#include <memory>
+
 
 namespace footstep_planner
 {
@@ -65,7 +67,7 @@ public:
    */
   bool calculateDistances(const PlanningState& from, const PlanningState& to);
 
-  void updateMap(gridmap_2d::GridMap2DPtr map);
+  void updateMap(std::shared_ptr<gridmap_2d::GridMap2D> map);
 
 private:
   static const int cvObstacleThreshold = 200;
@@ -80,8 +82,9 @@ private:
   int ivGoalX;
   int ivGoalY;
 
-  gridmap_2d::GridMap2DPtr ivMapPtr;
-  boost::shared_ptr<SBPL2DGridSearch> ivGridSearchPtr;
+  std::shared_ptr<gridmap_2d::GridMap2D> ivMapPtr;
+  // boost::shared_ptr<SBPL2DGridSearch> ivGridSearchPtr;
+  std::shared_ptr<SBPL2DGridSearch> ivGridSearchPtr;
 
   void resetGrid();
 };

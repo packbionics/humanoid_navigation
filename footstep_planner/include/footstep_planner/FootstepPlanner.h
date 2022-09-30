@@ -22,25 +22,29 @@
 #ifndef FOOTSTEP_PLANNER_FOOTSTEPPLANNER_H_
 #define FOOTSTEP_PLANNER_FOOTSTEPPLANNER_H_
 
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <humanoid_nav_msgs/PlanFootsteps.h>
-#include <humanoid_nav_msgs/PlanFootstepsBetweenFeet.h>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+
+#include <humanoid_nav_msgs/srv/plan_footsteps.hpp>
+#include <humanoid_nav_msgs/srv/plan_footsteps_between_feet.hpp>
+
 #include <footstep_planner/helper.h>
 #include <footstep_planner/PathCostHeuristic.h>
 #include <footstep_planner/FootstepPlannerEnvironment.h>
 #include <footstep_planner/PlanningStateChangeQuery.h>
 #include <footstep_planner/State.h>
-#include <nav_msgs/Path.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud.h>
-#include <tf/tf.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <XmlRpcValue.h>
-#include <XmlRpcException.h>
+
+#include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+// #include <tf/tf.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+// #include <XmlRpcValue.h>
+// #include <XmlRpcException.h>
 
 #include <assert.h>
 #include <time.h>
@@ -54,7 +58,7 @@ typedef std::vector<State>::const_iterator state_iter_t;
  * @brief A class to control the interaction between ROS and the footstep
  * planner.
  */
-class FootstepPlanner
+class FootstepPlanner : public rclcpp::Node
 {
 public:
   FootstepPlanner();
@@ -70,8 +74,8 @@ public:
   bool plan(bool force_new_plan=true);
 
   /// @brief Sets start, goal poses and calls FootstepPlanner::plan().
-  bool plan(const geometry_msgs::PoseStampedConstPtr start,
-            const geometry_msgs::PoseStampedConstPtr goal);
+  bool plan(const std::shared_ptr<geometry_msgs::msg::PoseStamped> start,
+            const std::shared_ptr<geometry_msgs::msg::PoseStamped> goal);
 
   /// @brief Sets start, goal poses and calls FootstepPlanner::plan().
   bool plan(float start_x, float start_y, float start_theta,
@@ -87,12 +91,12 @@ public:
   bool replan();
 
   /// @brief Service handle to plan footsteps.
-  bool planService(humanoid_nav_msgs::PlanFootsteps::Request &req,
-                   humanoid_nav_msgs::PlanFootsteps::Response &resp);
+  bool planService(humanoid_nav_msgs::srv::PlanFootsteps::Request &req,
+                   humanoid_nav_msgs::srv::PlanFootsteps::Response &resp);
 
   /// @brief Service handle to plan footsteps.
-  bool planFeetService(humanoid_nav_msgs::PlanFootstepsBetweenFeet::Request &req,
-                   humanoid_nav_msgs::PlanFootstepsBetweenFeet::Response &resp);
+  bool planFeetService(humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Request &req,
+                   humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Response &resp);
 
   /**
    * @brief Sets the goal pose as two feet (left / right)
@@ -106,7 +110,7 @@ public:
    *
    * @return True if the two foot poses have been set successfully.
    */
-  bool setGoal(const geometry_msgs::PoseStampedConstPtr goal_pose);
+  bool setGoal(const std::shared_ptr<geometry_msgs::msg::PoseStamped> goal_pose);
 
   /**
    * @brief Sets the goal pose as a robot pose centered between two feet.
@@ -120,7 +124,7 @@ public:
    *
    * @return True if the two foot poses have been set successfully.
    */
-  bool setStart(const geometry_msgs::PoseStampedConstPtr start_pose);
+  bool setStart(const std::shared_ptr<geometry_msgs::msg::PoseStamped> start_pose);
 
   /**
    * @brief Sets the start pose as a robot pose centered between two feet.
@@ -142,7 +146,7 @@ public:
    * @return True if a replanning is necessary, i.e. the old path is not valid
    * any more.
    */
-  bool updateMap(const gridmap_2d::GridMap2DPtr map);
+  bool updateMap(const std::shared_ptr<gridmap_2d::GridMap2D> map);
 
   void setMarkerNamespace(const std::string& ns)
   {
@@ -165,7 +169,7 @@ public:
    * @return True if the two foot poses have been set successfully.
    */
   void goalPoseCallback(
-      const geometry_msgs::PoseStampedConstPtr& goal_pose);
+      const std::shared_ptr<geometry_msgs::msg::PoseStamped>& goal_pose);
   /**
    * @brief Callback to set the start pose as a robot pose centered
    * between two feet. If the goal pose has been set previously the
@@ -176,14 +180,14 @@ public:
    * @return True if the two foot poses have been set successfully.
    */
   void startPoseCallback(
-      const geometry_msgs::PoseWithCovarianceStampedConstPtr& start_pose);
+      const std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped>& start_pose);
 
   /**
    * @brief Callback to set the map.
    *
    * Subscribed to 'map'.
    */
-  void mapCallback(const nav_msgs::OccupancyGridConstPtr& occupancy_map);
+  void mapCallback(const std::shared_ptr<nav_msgs::msg::OccupancyGrid>& occupancy_map);
 
   /**
    * @brief Clear the footstep path visualization from a previous planning
@@ -232,7 +236,7 @@ protected:
   void broadcastPathVis();
 
   /// helper to create service response
-  void extractFootstepsSrv(std::vector<humanoid_nav_msgs::StepTarget> & footsteps) const;
+  void extractFootstepsSrv(std::vector<humanoid_nav_msgs::msg::StepTarget> & footsteps) const;
 
   /**
    * @return True if the newly calculated path is different from the existing
@@ -247,8 +251,7 @@ protected:
   bool extractPath(const std::vector<int>& state_ids);
 
   /// @brief Generates a visualization msgs for a foot pose.
-  void footPoseToMarker(const State& footstep,
-                        visualization_msgs::Marker* marker);
+  void footPoseToMarker(const State& footstep, visualization_msgs::msg::Marker* marker);
 
   /**
    * @brief Starts the planning task in the underlying SBPL.
@@ -265,13 +268,13 @@ protected:
   void setPlanner();
 
   /// @brief Updates the environment in case of a changed map.
-  void updateEnvironment(const gridmap_2d::GridMap2DPtr old_map);
+  void updateEnvironment(const std::shared_ptr<gridmap_2d::GridMap2D> old_map);
 
-  boost::shared_ptr<FootstepPlannerEnvironment> ivPlannerEnvironmentPtr;
-  gridmap_2d::GridMap2DPtr ivMapPtr;
-  boost::shared_ptr<SBPLPlanner> ivPlannerPtr;
+  std::shared_ptr<FootstepPlannerEnvironment> ivPlannerEnvironmentPtr;
+  std::shared_ptr<gridmap_2d::GridMap2D> ivMapPtr;
+  std::shared_ptr<SBPLPlanner> ivPlannerPtr;
 
-  boost::shared_ptr<const PathCostHeuristic> ivPathCostHeuristicPtr;
+  std::shared_ptr<const PathCostHeuristic> ivPathCostHeuristicPtr;
 
   std::vector<State> ivPath;
 
@@ -280,15 +283,15 @@ protected:
   State ivGoalFootLeft;
   State ivGoalFootRight;
 
-  ros::Publisher  ivExpandedStatesVisPub;
-  ros::Publisher  ivFootstepPathVisPub;
-  ros::Publisher  ivRandomStatesVisPub;
-  ros::Subscriber ivGridMapSub;
-  ros::Publisher  ivHeuristicPathVisPub;
-  ros::Publisher  ivPathVisPub;
-  ros::Publisher  ivStartPoseVisPub;
-  ros::ServiceServer ivFootstepPlanService;
-  ros::ServiceServer ivFootstepPlanFeetService;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ivExpandedStatesVisPub;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ivFootstepPathVisPub;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ivRandomStatesVisPub;
+  rclcpp::Subscription ivGridMapSub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr ivHeuristicPathVisPub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr ivPathVisPub;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ivStartPoseVisPub;
+  rclcpp::Service ivFootstepPlanService;
+  rclcpp::Service ivFootstepPlanFeetService;
 
   double ivFootSeparation;
   double ivMaxStepWidth;

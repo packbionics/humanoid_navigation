@@ -2,7 +2,7 @@
  * A footstep planner for humanoid robots
  *
  * Copyright 2010-2011 Johannes Garimort, Armin Hornung, University of Freiburg
- * http://www.ros.org/wiki/footstep_planner
+ * http://www.rclcpp.org/wiki/footstep_planner
  *
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,10 +22,10 @@
 #define FOOTSTEP_PLANNER_FOOTSTEPPLANNERNODE_H_
 
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <footstep_planner/FootstepPlanner.h>
 
 
@@ -35,7 +35,7 @@ namespace footstep_planner
  * @brief Wrapper class for FootstepPlanner, providing callbacks for
  * the node functionality.
  */
-class FootstepPlannerNode
+class FootstepPlannerNode : public rclcpp::Node
 {
 public:
   FootstepPlannerNode();
@@ -44,13 +44,13 @@ public:
 protected:
   FootstepPlanner ivFootstepPlanner;
 
-  ros::Subscriber ivGoalPoseSub;
-  ros::Subscriber ivGridMapSub;
-  ros::Subscriber ivStartPoseSub;
-  ros::Subscriber ivRobotPoseSub;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr ivGoalPoseSub;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr ivGridMapSub;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr ivStartPoseSub;
+  rclcpp::Subscription ivRobotPoseSub;
 
-  ros::ServiceServer ivFootstepPlanService;
-  ros::ServiceServer ivFootstepPlanFeetService;
+  rclcpp::Service ivFootstepPlanService;
+  rclcpp::Service ivFootstepPlanFeetService;
 };
 }
 #endif  // FOOTSTEP_PLANNER_FOOTSTEPPLANNERNODE_H_

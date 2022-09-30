@@ -74,9 +74,9 @@ const
   // cast to unsigned int is safe since ivGoalX/ivGoalY are checked to be >= 0
   if ((unsigned int)ivGoalX != to_x || (unsigned int)ivGoalY != to_y)
   {
-    ROS_ERROR("PathCostHeuristic::getHValue to a different value than "
-              "precomputed, heuristic values will be wrong. You need to call "
-              "calculateDistances() before!");
+    // ROS_ERROR("PathCostHeuristic::getHValue to a different value than "
+    //           "precomputed, heuristic values will be wrong. You need to call "
+    //           "calculateDistances() before!");
   }
   assert((unsigned int)ivGoalX == to_x && (unsigned int)ivGoalY == to_y);
 
@@ -132,7 +132,7 @@ PathCostHeuristic::calculateDistances(const PlanningState& from,
 
 
 void
-PathCostHeuristic::updateMap(gridmap_2d::GridMap2DPtr map)
+PathCostHeuristic::updateMap(std::shared_ptr<gridmap_2d::GridMap2D> map)
 {
   if (ivpGrid) // reset map before change it's sizes (in other case we will get SEGMENT ERROR)
     resetGrid();
@@ -160,7 +160,7 @@ PathCostHeuristic::updateMap(gridmap_2d::GridMap2DPtr map)
     {
       float dist = ivMapPtr->distanceMapAtCell(x,y);
       if (dist < 0.0f)
-        ROS_ERROR("Distance map at %d %d out of bounds", x, y);
+        // ROS_ERROR("Distance map at %d %d out of bounds", x, y);
       else if (dist <= ivInflationRadius)
         ivpGrid[x][y] = 255;
       else

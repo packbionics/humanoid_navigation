@@ -27,25 +27,27 @@
 #include <footstep_planner/Footstep.h>
 #include <footstep_planner/PlanningState.h>
 #include <footstep_planner/State.h>
-#include <humanoid_nav_msgs/ClipFootstep.h>
+#include <humanoid_nav_msgs/srv/clip_footstep.hpp>
 #include <sbpl/headers.h>
+
+#include <tf2/LinearMath/Transform.h>
 
 #include <math.h>
 #include <vector>
+#include <memory>
 #include <tr1/unordered_set>
 #include <tr1/hashtable.h>
-
 
 namespace footstep_planner
 {
 struct environment_params
 {
   std::vector<Footstep> footstep_set;
-  boost::shared_ptr<Heuristic> heuristic;
+  std::shared_ptr<Heuristic> heuristic;
 
   /// Defines the area of performable (discrete) steps.
   std::vector<std::pair<int, int> > step_range;
-
+  
   double footsize_x, footsize_y, footsize_z;
   double foot_origin_shift_x, foot_origin_shift_y;
   double max_footstep_x, max_footstep_y, max_footstep_theta;
@@ -74,7 +76,7 @@ struct environment_params
 class FootstepPlannerEnvironment : public DiscreteSpaceInformation
 {
 public:
-  // specialization of hash<int,int>, similar to standard boost::hash on pairs?
+  // specialization of hash<int,int>, similar to standard std::hash on pairs?
   struct IntPairHash{
   public:
     size_t operator()(std::pair<int, int> x) const throw() {
@@ -142,7 +144,7 @@ public:
   std::pair<int, int> updateStart(const State& foot_left,
                                   const State& right_right);
 
-  void updateMap(gridmap_2d::GridMap2DPtr map);
+  void updateMap(std::shared_ptr<gridmap_2d::GridMap2D> map);
 
   /**
    * @return True iff the foot in State s is colliding with an
@@ -381,7 +383,7 @@ protected:
   const std::vector<Footstep>& ivFootstepSet;
 
   /// The heuristic function used by the planner.
-  const boost::shared_ptr<Heuristic> ivHeuristicConstPtr;
+  const std::shared_ptr<Heuristic> ivHeuristicConstPtr;
 
   /// Size of the foot in x direction.
   const double ivFootsizeX;
@@ -451,7 +453,7 @@ protected:
   bool ivHeuristicExpired;
 
   /// Pointer to the map.
-  boost::shared_ptr<gridmap_2d::GridMap2D> ivMapPtr;
+  std::shared_ptr<gridmap_2d::GridMap2D> ivMapPtr;
 
   exp_states_2d_t ivExpandedStates;
   exp_states_t ivRandomStates;  ///< random intermediate states for R*

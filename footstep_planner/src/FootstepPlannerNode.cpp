@@ -23,17 +23,16 @@
 namespace footstep_planner
 {
 FootstepPlannerNode::FootstepPlannerNode()
+: rclcpp::Node("footstep_planner_node")
 {
-  ros::NodeHandle nh;
-
   // provide callbacks to interact with the footstep planner:
-  ivGridMapSub = nh.subscribe<nav_msgs::OccupancyGrid>("map", 1, &FootstepPlanner::mapCallback, &ivFootstepPlanner);
-  ivGoalPoseSub = nh.subscribe<geometry_msgs::PoseStamped>("goal", 1, &FootstepPlanner::goalPoseCallback, &ivFootstepPlanner);
-  ivStartPoseSub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, &FootstepPlanner::startPoseCallback, &ivFootstepPlanner);
+  ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, &FootstepPlanner::mapCallback, &ivFootstepPlanner);
+  ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, &FootstepPlanner::goalPoseCallback, &ivFootstepPlanner);
+  ivStartPoseSub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, &FootstepPlanner::startPoseCallback, &ivFootstepPlanner);
 
   // service:
-  ivFootstepPlanService = nh.advertiseService("plan_footsteps", &FootstepPlanner::planService, &ivFootstepPlanner);
-  ivFootstepPlanFeetService = nh.advertiseService("plan_footsteps_feet", &FootstepPlanner::planFeetService, &ivFootstepPlanner);
+  ivFootstepPlanService = this->create_service("plan_footsteps", &FootstepPlanner::planService, &ivFootstepPlanner);
+  ivFootstepPlanFeetService = this->create_service("plan_footsteps_feet", &FootstepPlanner::planFeetService, &ivFootstepPlanner);
 }
 
 
