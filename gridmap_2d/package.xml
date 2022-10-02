@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>gridmap_2d</name>
   <version>0.4.2</version>
   <description>
@@ -12,9 +12,17 @@
   <url type="website">http://wiki.ros.org/gridmap_2d</url>
   <url type="repository">https://github.com/ROBOTIS-GIT/humanoid_navigation</url>
   <url type="bugtracker">https://github.com/ROBOTIS-GIT/humanoid_navigation/issues</url>
-  <buildtool_depend>catkin</buildtool_depend>
-  <depend>roscpp</depend>
-  <depend>rosconsole</depend>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
   <depend>nav_msgs</depend>
   <depend>libopencv-dev</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

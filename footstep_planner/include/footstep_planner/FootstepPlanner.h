@@ -46,6 +46,15 @@
 // #include <XmlRpcValue.h>
 // #include <XmlRpcException.h>
 
+#include <tf2/utils.h>
+
+#include <boost/thread.hpp>
+
+#include <bullet/LinearMath/btQuaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+#include <boost/pointer_cast.hpp>
+
 #include <assert.h>
 #include <time.h>
 
@@ -286,12 +295,12 @@ protected:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ivExpandedStatesVisPub;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ivFootstepPathVisPub;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ivRandomStatesVisPub;
-  rclcpp::Subscription ivGridMapSub;
+  // rclcpp::Subscription ivGridMapSub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr ivHeuristicPathVisPub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr ivPathVisPub;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ivStartPoseVisPub;
-  rclcpp::Service ivFootstepPlanService;
-  rclcpp::Service ivFootstepPlanFeetService;
+  // rclcpp::Service ivFootstepPlanService;
+  // rclcpp::Service ivFootstepPlanFeetService;
 
   double ivFootSeparation;
   double ivMaxStepWidth;

@@ -37,10 +37,14 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 #include <tf2/utils.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <tf2/transform_datatypes.h>
-// #include <tf/tf.h>
-// #include <tf/transform_listener.h>
+#include <bullet/LinearMath/btTransform.h>
+#include <bullet/LinearMath/btVector3.h>
+
+#include <rclcpp_action/rclcpp_action.hpp>
 
 #include <assert.h>
 
@@ -68,15 +72,14 @@ public:
    *
    * Subscribed to 'goal'.
    */
-  void goalPoseCallback(
-  const std::shared_ptr<geometry_msgs::msg::PoseStamped>& goal_pose);
+  void goalPoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr goal_pose);
 
   /**
    * @brief Callback to set the map.
    *
    * Subscribed to 'map'.
    */
-  void mapCallback(const std::shared_ptr<nav_msgs::msg::OccupancyGrid> occupancy_map);
+  void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map);
 
 protected:
   /**
@@ -107,9 +110,9 @@ protected:
    */
   bool getFootTransform(const std::string& foot_id,
                         const std::string& world_frame_id,
-                        const ros::Time& time,
-                        const ros::Duration& waiting_time,
-                        tf::Transform* foot);
+                        const rclcpp::Time& time,
+                        const rclcpp::Duration& waiting_time,
+                        tf2::Transform* foot);
 
   /**
    * @brief Calculates the footstep necessary to reach 'to' from within
@@ -117,8 +120,8 @@ protected:
    *
    * @return True if the footstep can be performed by the NAO robot.
    */
-  bool getFootstep(const tf::Pose& from, const State& from_planned,
-		               const State& to, std::shared_ptr<humanoid_nav_msgs::msg::StepTarget> footstep);
+  bool getFootstep(const tf2::Transform& from, const State& from_planned,
+		               const State& to, humanoid_nav_msgs::msg::StepTarget* footstep);
 
   /**
    * @brief Extracts the footsteps necessary to perform the calculated
@@ -159,16 +162,13 @@ protected:
    * @brief Called from within ROS' actionlib at the end of a goal
    * request.
    */
-  void doneCallback(
-  const actionlib::SimpleClientGoalState& state,
-      const humanoid_nav_msgs::ExecFootstepsResultConstPtr& result);
+  void doneCallback(const rclcpp_action::ClientGoalHandle<humanoid_nav_msgs::action::ExecFootsteps>::WrappedResult& result);
 
   /**
    * @brief Called from within ROS' actionlib during the execution of
    * a goal request.
    */
-  void feedbackCallback(
-  const std::shared_ptr<humanoid_nav_msgs::srv::ExecFootstepsFeedback>& fb);
+  void feedbackCallback(rclcpp_action::ClientGoalHandle<humanoid_nav_msgs::action::ExecFootsteps>::SharedPtr, const std::shared_ptr<const humanoid_nav_msgs::action::ExecFootsteps::Feedback>& fb);
 
   bool performable(const humanoid_nav_msgs::msg::StepTarget& footstep);
   bool performable(float step_x, float step_y);
@@ -181,7 +181,7 @@ protected:
    * @return True if the footstep can be performed by the robot (i.e. it
    * is within the robot's max ranges).
    */
-  bool performanceValid(const humanoid_nav_msgs::srv::ClipFootstep& footstep);
+  // bool performanceValid(const humanoid_nav_msgs::srv::ClipFootstep& footstep);
 
   /// @return True if both states are equal upon some accuracy.
   bool performanceValid(const State& planned, const State& executed);
@@ -192,14 +192,15 @@ protected:
 
   FootstepPlanner ivPlanner;
 
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid> ivGridMapSub;
-  rclcpp::Subscription ivRobotPoseSub;
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped> ivGoalPoseSub;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr ivGridMapSub;
+  // rclcpp::Subscription ivRobotPoseSub;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr ivGoalPoseSub;
 
-  rclcpp::Service<humanoid_nav_msgs::msg::StepTargetService> ivFootstepSrv;
-  rclcpp::Service<humanoid_nav_msgs::ClipFootstep> ivClipFootstepSrv;
+  rclcpp::Client<humanoid_nav_msgs::srv::StepTargetService>::SharedPtr ivFootstepSrv;
+  rclcpp::Client<humanoid_nav_msgs::srv::ClipFootstep>::SharedPtr ivClipFootstepSrv;
 
-  tf2::TransformListener ivTransformListener;
+  std::shared_ptr<tf2_ros::Buffer> ivTransformBuffer;
+  std::shared_ptr<tf2_ros::TransformListener> ivTransformListener;
 
   boost::mutex ivExecutionLock;
 
@@ -225,8 +226,7 @@ protected:
   double ivFeedbackFrequency;
 
   /// Simple action client to control a footstep execution.
-  actionlib::SimpleActionClient<
-      humanoid_nav_msgs::ExecFootstepsAction> ivFootstepsExecution;
+  rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SharedPtr ivFootstepsExecution;
 
   /// Fixed delay (=2) of the incoming footsteps.
   const int ivExecutionShift;

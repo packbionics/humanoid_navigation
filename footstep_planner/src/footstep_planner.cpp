@@ -23,11 +23,11 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "footstep_planner");
+  rclcpp::init(argc, argv);
 
-  footstep_planner::FootstepPlannerNode planner;
+  // footstep_planner::FootstepPlannerNode planner;
 
-  ros::spin();
+  rclcpp::spin(std::make_shared<footstep_planner::FootstepPlannerNode>());
 
   return 0;
 }

@@ -47,10 +47,10 @@ protected:
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr ivGoalPoseSub;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr ivGridMapSub;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr ivStartPoseSub;
-  rclcpp::Subscription ivRobotPoseSub;
+  // rclcpp::Subscription ivRobotPoseSub;
 
-  rclcpp::Service ivFootstepPlanService;
-  rclcpp::Service ivFootstepPlanFeetService;
+  rclcpp::Service<humanoid_nav_msgs::srv::PlanFootsteps>::SharedPtr ivFootstepPlanService;
+  rclcpp::Service<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet>::SharedPtr ivFootstepPlanFeetService;
 };
 }
 #endif  // FOOTSTEP_PLANNER_FOOTSTEPPLANNERNODE_H_

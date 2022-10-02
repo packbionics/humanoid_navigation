@@ -38,6 +38,9 @@
 #include <tr1/unordered_set>
 #include <tr1/hashtable.h>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/pointer_cast.hpp>
+
 namespace footstep_planner
 {
 struct environment_params

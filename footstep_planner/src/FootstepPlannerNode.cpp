@@ -25,14 +25,14 @@ namespace footstep_planner
 FootstepPlannerNode::FootstepPlannerNode()
 : rclcpp::Node("footstep_planner_node")
 {
-  // provide callbacks to interact with the footstep planner:
-  ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, &FootstepPlanner::mapCallback, &ivFootstepPlanner);
-  ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, &FootstepPlanner::goalPoseCallback, &ivFootstepPlanner);
-  ivStartPoseSub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, &FootstepPlanner::startPoseCallback, &ivFootstepPlanner);
+  // // provide callbacks to interact with the footstep planner:
+  // ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, std::bind(&FootstepPlanner::mapCallback, &ivFootstepPlanner, std::placeholders::_1));
+  // ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, std::bind(&FootstepPlanner::goalPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
+  // ivStartPoseSub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&FootstepPlanner::startPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
 
-  // service:
-  ivFootstepPlanService = this->create_service("plan_footsteps", &FootstepPlanner::planService, &ivFootstepPlanner);
-  ivFootstepPlanFeetService = this->create_service("plan_footsteps_feet", &FootstepPlanner::planFeetService, &ivFootstepPlanner);
+  // // service:
+  // ivFootstepPlanService = this->create_service<humanoid_nav_msgs::srv::PlanFootsteps>("plan_footsteps", &FootstepPlanner::planService);
+  // ivFootstepPlanFeetService = this->create_service<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet>("plan_footsteps_feet", &FootstepPlanner::planFeetService);
 }
 
 

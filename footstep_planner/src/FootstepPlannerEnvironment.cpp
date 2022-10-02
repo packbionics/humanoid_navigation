@@ -445,18 +445,15 @@ FootstepPlannerEnvironment::reachable(const PlanningState& from,
   {
       return false;
   }
-
+  
   tf2::Transform step =
-    tf2::Pose(
-      tf2::createQuaternionFromYaw(
-        angle_cell_2_state(from.getTheta(), ivNumAngleBins)),
-      tf2::Point(cell_2_state(from.getX(), ivCellSize),
+    tf2::Transform(
+      tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), angle_cell_2_state(from.getTheta(), ivNumAngleBins)),
+      tf2::Vector3(cell_2_state(from.getX(), ivCellSize),
                 cell_2_state(from.getY(), ivCellSize),
                 0.0)).inverse() *
-    tf2::Pose(
-      tf2::createQuaternionFromYaw(
-        angle_cell_2_state(from.getTheta(), ivNumAngleBins)),
-      tf2::Point(cell_2_state(to.getX(), ivCellSize),
+    tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), angle_cell_2_state(from.getTheta(), ivNumAngleBins)),
+      tf2::Vector3(cell_2_state(to.getX(), ivCellSize),
                 cell_2_state(to.getY(), ivCellSize),
                 0.0));
   int footstep_x = disc_val(step.getOrigin().x(), ivCellSize);
@@ -1096,7 +1093,7 @@ void FootstepPlannerEnvironment::GetRandomNeighs(const PlanningState* currentSta
   if (NeighIDV->size() == 0){
     // ROS_WARN("Could not create any random neighbor nodes (%d attempts) from id %d (%d %d)",
     //          nAttempts, currentState->getId(), X, Y);
-  } else
+  }
 
     // ROS_DEBUG("Created %zu random neighbors (%d attempts) from id %d "
     //     "(%d %d)", NeighIDV->size(), nAttempts, currentState->getId(),

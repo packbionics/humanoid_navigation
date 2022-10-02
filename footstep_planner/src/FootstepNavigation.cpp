@@ -29,59 +29,52 @@ FootstepNavigation::FootstepNavigation()
   ivIdFootLeft("/l_sole"),
   ivIdMapFrame("map"),
   ivExecutingFootsteps(false),
-  ivFootstepsExecution("footsteps_execution", true),
   ivExecutionShift(2),
   ivControlStepIdx(-1),
   ivResetStepIdx(0)
 {
+  ivTransformBuffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  ivTransformListener = std::make_shared<tf2_ros::TransformListener>(*ivTransformBuffer);
+
+  // action client
+  ivFootstepsExecution = rclcpp_action::create_client<humanoid_nav_msgs::action::ExecFootsteps>(this, "footsteps_execution");
+
   // service
-  ivFootstepSrv =
-    this->create_service<humanoid_nav_msgs::msg::StepTargetService>(
-      "footstep_srv");
-  ivClipFootstepSrv =
-    this->create_service<humanoid_nav_msgs::ClipFootstep>(
-      "clip_footstep_srv");
+  ivFootstepSrv = this->create_client<humanoid_nav_msgs::srv::StepTargetService>("footstep_srv");
+  ivClipFootstepSrv = this->create_client<humanoid_nav_msgs::srv::ClipFootstep>("clip_footstep_srv");
 
   // subscribers
-  ivGridMapSub =
-    this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-      "map", 1, &FootstepNavigation::mapCallback, this);
-  ivGoalPoseSub =
-    this->create_subscription<geometry_msgs::msg::PoseStamped>(
-      "goal", 1, &FootstepNavigation::goalPoseCallback, this);
+  ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, std::bind(&FootstepNavigation::mapCallback, this, std::placeholders::_1));
+  ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, std::bind(&FootstepNavigation::goalPoseCallback, this, std::placeholders::_1));
 
   // read parameters from config file:
-  nh_private.param("rfoot_frame_id", ivIdFootRight, ivIdFootRight);
-  nh_private.param("lfoot_frame_id", ivIdFootLeft, ivIdFootLeft);
+  ivIdFootRight = this->declare_parameter("rfoot_frame_id", ivIdFootRight);
+  ivIdFootLeft = this->declare_parameter("lfoot_frame_id", ivIdFootLeft);
 
-  nh_private.param("accuracy/footstep/x", ivAccuracyX, 0.01);
-  nh_private.param("accuracy/footstep/y", ivAccuracyY, 0.01);
-  nh_private.param("accuracy/footstep/theta", ivAccuracyTheta, 0.1);
+  ivAccuracyX = this->declare_parameter("accuracy/footstep/x", 0.01);
+  ivAccuracyY = this->declare_parameter("accuracy/footstep/y", 0.01);
+  ivAccuracyTheta = this->declare_parameter("accuracy/footstep/theta", 0.1);
 
-  nh_private.param("accuracy/cell_size", ivCellSize, 0.005);
-  nh_private.param("accuracy/num_angle_bins", ivNumAngleBins, 128);
+  ivCellSize = this->declare_parameter("accuracy/cell_size", 0.005);
+  ivNumAngleBins = this->declare_parameter("accuracy/num_angle_bins", 128);
 
-  nh_private.param("forward_search", ivForwardSearch, false);
+  ivForwardSearch = this->declare_parameter("forward_search", false);
 
-  nh_private.param("feedback_frequency", ivFeedbackFrequency, 5.0);
-  nh_private.param("safe_execution", ivSafeExecution, true);
+  ivFeedbackFrequency = this->declare_parameter("feedback_frequency", 5.0);
+  ivSafeExecution = this->declare_parameter("safe_execution", true);
 
-  nh_private.param("foot/max/step/x", ivMaxStepX, 0.07);
-  nh_private.param("foot/max/step/y", ivMaxStepY, 0.15);
-  nh_private.param("foot/max/step/theta", ivMaxStepTheta, 0.3);
-  nh_private.param("foot/max/inverse/step/x", ivMaxInvStepX, -0.03);
-  nh_private.param("foot/max/inverse/step/y", ivMaxInvStepY, 0.09);
-  nh_private.param("foot/max/inverse/step/theta", ivMaxInvStepTheta, -0.01);
+  ivMaxStepX = this->declare_parameter("foot/max/step/x", 0.07);
+  ivMaxStepY = this->declare_parameter("foot/max/step/y", 0.15);
+  ivMaxStepTheta = this->declare_parameter("foot/max/step/theta", 0.3);
+  ivMaxInvStepX = this->declare_parameter("foot/max/inverse/step/x", -0.03);
+  ivMaxInvStepY = this->declare_parameter("foot/max/inverse/step/y", 0.09);
+  ivMaxInvStepTheta = this->declare_parameter("foot/max/inverse/step/theta", -0.01);
 
   // step range
-  XmlRpc::XmlRpcValue step_range_x;
-  XmlRpc::XmlRpcValue step_range_y;
-  nh_private.getParam("step_range/x", step_range_x);
-  nh_private.getParam("step_range/y", step_range_y);
-  if (step_range_x.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/x from config file.");
-  if (step_range_y.getType() != XmlRpc::XmlRpcValue::TypeArray)
-    RCLCPP_ERROR(this->get_logger(), "Error reading footsteps/y from config file.");
+  std::vector<double> step_range_x;
+  std::vector<double> step_range_y;
+  step_range_x = this->get_parameter("step_range/x").as_double_array();
+  step_range_y = this->get_parameter("step_range/y").as_double_array();
   if (step_range_x.size() != step_range_y.size())
   {
     RCLCPP_ERROR(this->get_logger(), "Step range points have different size. Exit!");
@@ -166,7 +159,7 @@ FootstepNavigation::startExecution()
   {
     ivFootstepExecutionPtr.reset(
       new boost::thread(
-        boost::bind(&FootstepNavigation::executeFootsteps, this)));
+        std::bind(&FootstepNavigation::executeFootsteps, this)));
   }
   else
   {
@@ -188,7 +181,7 @@ FootstepNavigation::executeFootsteps()
   RCLCPP_INFO(this->get_logger(), "Start walking towards the goal.");
 
   humanoid_nav_msgs::msg::StepTarget step;
-  humanoid_nav_msgs::srv::StepTargetService step_srv;
+  std::shared_ptr<humanoid_nav_msgs::srv::StepTargetService::Request> step_srv_request;
 
   tf2::Transform from;
   std::string support_foot_id;
@@ -221,14 +214,14 @@ FootstepNavigation::executeFootsteps()
       support_foot_id = ivIdFootLeft;
 
     // try to get real placement of the support foot
-    if (getFootTransform(support_foot_id, ivIdMapFrame, ros::Time::now(),
-                         rclcpp::Duration(0.5), &from))
+    if (getFootTransform(support_foot_id, ivIdMapFrame, this->get_clock()->now(),
+                         rclcpp::Duration(0, 5 * 100000000), &from))
     {
       // calculate relative step and check if it can be performed
       if (getFootstep(from, *from_planned, *to_planned, &step))
       {
-        step_srv.request.step = step;
-        ivFootstepSrv.call(step_srv);
+        step_srv_request->step = step;
+        ivFootstepSrv->async_send_request(step_srv_request);
       }
       // ..if it cannot be performed initialize replanning
       else
@@ -243,7 +236,7 @@ FootstepNavigation::executeFootsteps()
     else
     {
       // if the support foot could not be received wait and try again
-      rclcpp::Duration(0.5).sleep();
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
       continue;
     }
 
@@ -267,9 +260,9 @@ FootstepNavigation::executeFootstepsFast()
   ivExecutingFootsteps = true;
 
   // make sure the action client is connected to the action server
-  ivFootstepsExecution.waitForServer();
+  ivFootstepsExecution->wait_for_action_server();
 
-  humanoid_nav_msgs::ExecFootstepsGoal goal;
+  humanoid_nav_msgs::action::ExecFootsteps::Goal goal;
   State support_leg;
   if (ivPlanner.getPathBegin()->getLeg() == RIGHT)
     support_leg = ivPlanner.getStartFootRight();
@@ -283,11 +276,13 @@ FootstepNavigation::executeFootstepsFast()
 
     // start the execution via action; std::placeholders::_1, std::placeholders::_2 are place holders for
     // function arguments (see boost doc)
-    ivFootstepsExecution.sendGoal(
-      goal,
-      boost::bind(&FootstepNavigation::doneCallback, this, std::placeholders::_1, std::placeholders::_2),
-      boost::bind(&FootstepNavigation::activeCallback, this),
-      boost::bind(&FootstepNavigation::feedbackCallback, this, std::placeholders::_1));
+    rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SendGoalOptions send_goal_options = rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SendGoalOptions();
+      
+      send_goal_options.goal_response_callback = std::bind(&FootstepNavigation::activeCallback, this);
+      send_goal_options.feedback_callback = std::bind(&FootstepNavigation::feedbackCallback, this, std::placeholders::_1, std::placeholders::_2);
+      send_goal_options.result_callback = std::bind(&FootstepNavigation::doneCallback, this, std::placeholders::_1);
+
+      ivFootstepsExecution->async_send_goal(goal, send_goal_options);
   }
   else
   {
@@ -310,14 +305,12 @@ FootstepNavigation::activeCallback()
 
 
 void
-FootstepNavigation::doneCallback(
-	const actionlib::SimpleClientGoalState& state,
-	const humanoid_nav_msgs::ExecFootstepsResultConstPtr& result)
+FootstepNavigation::doneCallback(const rclcpp_action::ClientGoalHandle<humanoid_nav_msgs::action::ExecFootsteps>::WrappedResult& result)
 {
-	if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+	if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
 		RCLCPP_INFO(this->get_logger(), "Succeeded walking to the goal.");
-	else if (state == actionlib::SimpleClientGoalState::PREEMPTED)
-		RCLCPP_INFO(this->get_logger(), "Preempted walking to the goal.");
+	else if (result.code == rclcpp_action::ResultCode::CANCELED)
+		RCLCPP_INFO(this->get_logger(), "Canceled walking to the goal.");
 	// TODO: distinct between further states??
 	else
 		RCLCPP_INFO(this->get_logger(), "Failed walking to the goal.");
@@ -327,9 +320,7 @@ FootstepNavigation::doneCallback(
 }
 
 
-void
-FootstepNavigation::feedbackCallback(
-	const humanoid_nav_msgs::ExecFootstepsFeedbackConstPtr& fb)
+void FootstepNavigation::feedbackCallback(rclcpp_action::ClientGoalHandle<humanoid_nav_msgs::action::ExecFootsteps>::SharedPtr goal_handle, const std::shared_ptr<const humanoid_nav_msgs::action::ExecFootsteps::Feedback>& fb)
 {
 	int executed_steps_idx = fb->executed_footsteps.size() - ivExecutionShift;
 	// make sure at least one step has been performed
@@ -351,13 +342,13 @@ FootstepNavigation::feedbackCallback(
   else
     foot_id = ivIdFootLeft;
 
-  if (!getFootTransform(foot_id, ivIdMapFrame, ros::Time::now(),
-		                    rclcpp::Duration(0.5), &executed_tf))
+  if (!getFootTransform(foot_id, ivIdMapFrame, this->get_clock()->now(),
+		                    rclcpp::Duration(0, 5 * 100000000), &executed_tf))
   {
     State executed(executed_tf.getOrigin().x(), executed_tf.getOrigin().y(),
-                   tf::getYaw(executed_tf.getRotation()), planned.getLeg());
-    ivFootstepsExecution.cancelGoal();
-    humanoid_nav_msgs::ExecFootstepsGoal goal;
+                   tf2::getYaw(executed_tf.getRotation()), planned.getLeg());
+    ivFootstepsExecution->async_cancel_goal(goal_handle);
+    humanoid_nav_msgs::action::ExecFootsteps::Goal goal;
     // try to reach the calculated path
     if (getFootstepsFromPath(executed, executed_steps_idx + ivResetStepIdx,
                              goal.footsteps))
@@ -367,12 +358,13 @@ FootstepNavigation::feedbackCallback(
       ivResetStepIdx += ivControlStepIdx + 1;
       ivControlStepIdx = 0;
 
-      // restart the footstep execution
-      ivFootstepsExecution.sendGoal(
-        goal,
-        boost::bind(&FootstepNavigation::doneCallback, this, std::placeholders::_1, std::placeholders::_2),
-        boost::bind(&FootstepNavigation::activeCallback, this),
-        boost::bind(&FootstepNavigation::feedbackCallback, this, std::placeholders::_1));
+      rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SendGoalOptions send_goal_options = rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SendGoalOptions();
+      
+      send_goal_options.goal_response_callback = std::bind(&FootstepNavigation::activeCallback, this);
+      send_goal_options.feedback_callback = std::bind(&FootstepNavigation::feedbackCallback, this, std::placeholders::_1, std::placeholders::_2);
+      send_goal_options.result_callback = std::bind(&FootstepNavigation::doneCallback, this, std::placeholders::_1);
+
+      ivFootstepsExecution->async_send_goal(goal, send_goal_options);
     }
     // the previously calculated path cannot be reached so we have plan
     // a new path
@@ -383,17 +375,17 @@ FootstepNavigation::feedbackCallback(
   }
 
   State executed(executed_tf.getOrigin().x(), executed_tf.getOrigin().y(),
-                 tf::getYaw(executed_tf.getRotation()), planned.getLeg());
+                 tf2::getYaw(executed_tf.getRotation()), planned.getLeg());
 
   // check if the currently executed footstep is no longer observed (i.e.
   // the robot no longer follows its calculated path)
   if (executed_steps_idx >= ivControlStepIdx + 2)
 	{
-    ivFootstepsExecution.cancelGoal();
+    ivFootstepsExecution->async_cancel_goal(goal_handle);
 
     RCLCPP_DEBUG(this->get_logger(), "Footstep execution incorrect.");
 
-    humanoid_nav_msgs::ExecFootstepsGoal goal;
+    humanoid_nav_msgs::action::ExecFootsteps::Goal goal;
     // try to reach the calculated path
     if (getFootstepsFromPath(executed, executed_steps_idx + ivResetStepIdx,
                              goal.footsteps))
@@ -406,11 +398,13 @@ FootstepNavigation::feedbackCallback(
       ivControlStepIdx = 0;
 
       // restart the footstep execution
-      ivFootstepsExecution.sendGoal(
-        goal,
-        boost::bind(&FootstepNavigation::doneCallback, this, std::placeholders::_1, std::placeholders::_2),
-        boost::bind(&FootstepNavigation::activeCallback, this),
-        boost::bind(&FootstepNavigation::feedbackCallback, this, std::placeholders::_1));
+      rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SendGoalOptions send_goal_options = rclcpp_action::Client<humanoid_nav_msgs::action::ExecFootsteps>::SendGoalOptions();
+      
+      send_goal_options.goal_response_callback = std::bind(&FootstepNavigation::activeCallback, this);
+      send_goal_options.feedback_callback = std::bind(&FootstepNavigation::feedbackCallback, this, std::placeholders::_1, std::placeholders::_2);
+      send_goal_options.result_callback = std::bind(&FootstepNavigation::doneCallback, this, std::placeholders::_1);
+
+      ivFootstepsExecution->async_send_goal(goal, send_goal_options);
     }
     // the previously calculated path cannot be reached so we have plan
     // a new path
@@ -442,9 +436,7 @@ FootstepNavigation::feedbackCallback(
 }
 
 
-void
-FootstepNavigation::goalPoseCallback(
-  const std::shared_ptr<geometry_msgs::msg::PoseStamped>& goal_pose)
+void FootstepNavigation::goalPoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr goal_pose)
 {
   // check if the execution is locked
   if (ivExecutingFootsteps)
@@ -467,8 +459,7 @@ FootstepNavigation::goalPoseCallback(
 
 
 void
-FootstepNavigation::mapCallback(
-  const std::shared_ptr<nav_msgs::msg::OccupancyGrid>& occupancy_map)
+FootstepNavigation::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map)
 {
   // stop execution if an execution was performed
   if (ivExecutingFootsteps)
@@ -481,11 +472,11 @@ FootstepNavigation::mapCallback(
     }
     else
     {
-  		ivFootstepsExecution.cancelAllGoals();
+      ivFootstepsExecution->async_cancel_all_goals();
     }
   }
 
-  gridmap_2d::GridMap2DPtr map(new gridmap_2d::GridMap2D(occupancy_map));
+  std::shared_ptr<gridmap_2d::GridMap2D> map(new gridmap_2d::GridMap2D(occupancy_map));
   ivIdMapFrame = map->getFrameID();
 
   // updates the map and starts replanning if necessary
@@ -515,13 +506,13 @@ FootstepNavigation::setGoal(float x, float y, float theta)
 bool
 FootstepNavigation::updateStart()
 {
-  rclcpp::Duration(0.5).sleep();
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   tf2::Transform foot_left, foot_right;
   {
     // get real placement of the feet
-	  if (!getFootTransform(ivIdFootLeft, ivIdMapFrame, ros::Time::now(),
-      		                rclcpp::Duration(0.5), &foot_left))
+	  if (!getFootTransform(ivIdFootLeft, ivIdMapFrame, this->get_clock()->now(),
+      		                rclcpp::Duration(0, 5 * 100000000), &foot_left))
 	  {
 	    if (ivPlanner.pathExists())
 	    {
@@ -529,8 +520,8 @@ FootstepNavigation::updateStart()
 	    }
 	    return false;
 	  }
-    if (!getFootTransform(ivIdFootRight, ivIdMapFrame, ros::Time::now(),
-    		                  rclcpp::Duration(0.5), &foot_right))
+    if (!getFootTransform(ivIdFootRight, ivIdMapFrame, this->get_clock()->now(),
+    		                  rclcpp::Duration(0, 5 * 100000000), &foot_right))
     {
       if (ivPlanner.pathExists())
       {
@@ -553,15 +544,15 @@ FootstepNavigation::updateStart()
 
 
 bool
-FootstepNavigation::getFootstep(const tf::Pose& from,
+FootstepNavigation::getFootstep(const tf2::Transform& from,
                                 const State& from_planned,
 		                            const State& to,
 		                            humanoid_nav_msgs::msg::StepTarget* footstep)
 {
   // get footstep to reach 'to' from 'from'
   tf2::Transform step = from.inverse() *
-                       tf::Pose(tf::createQuaternionFromYaw(to.getTheta()),
-                                tf::Point(to.getX(), to.getY(), 0.0));
+                       tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), to.getTheta()),
+                                tf2::Vector3(to.getX(), to.getY(), 0.0));
 
   // set the footstep
   footstep->pose.x = step.getOrigin().x();
@@ -593,11 +584,11 @@ FootstepNavigation::getFootstep(const tf::Pose& from,
     if (step_diff_x < ivAccuracyX && step_diff_y < ivAccuracyY &&
         step_diff_theta < ivAccuracyTheta)
     {
-	  step = tf::Pose(tf::createQuaternionFromYaw(from_planned.getTheta()),
-	                  tf::Point(from_planned.getX(), from_planned.getY(), 0.0)
+	  step = tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), from_planned.getTheta()),
+	                  tf2::Vector3(from_planned.getX(), from_planned.getY(), 0.0)
 	                  ).inverse() *
-		     tf::Pose(tf::createQuaternionFromYaw(to.getTheta()),
-				      tf::Point(to.getX(), to.getY(), 0.0));
+		     tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), to.getTheta()),
+				      tf2::Vector3(to.getX(), to.getY(), 0.0));
 
 	  footstep->pose.x = step.getOrigin().x();
 	  footstep->pose.y = step.getOrigin().y();
@@ -637,8 +628,8 @@ FootstepNavigation::getFootstepsFromPath(
   humanoid_nav_msgs::msg::StepTarget footstep;
 
   state_iter_t to_planned = ivPlanner.getPathBegin() + starting_step_num - 1;
-  tf::Pose last(tf::createQuaternionFromYaw(current_support_leg.getTheta()),
-                tf::Point(current_support_leg.getX(), current_support_leg.getY(),
+  tf2::Transform last(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), current_support_leg.getTheta()),
+                tf2::Vector3(current_support_leg.getX(), current_support_leg.getY(),
                           0.0));
   const State* from_planned = to_planned.base();
   to_planned++;
@@ -654,8 +645,8 @@ FootstepNavigation::getFootstepsFromPath(
       return false;
     }
 
-    last = tf::Pose(tf::createQuaternionFromYaw(to_planned->getTheta()),
-                    tf::Point(to_planned->getX(), to_planned->getY(), 0.0));
+    last = tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), to_planned->getTheta()),
+                    tf2::Vector3(to_planned->getX(), to_planned->getY(), 0.0));
     from_planned = to_planned.base();
   }
 
@@ -666,17 +657,19 @@ FootstepNavigation::getFootstepsFromPath(
 bool
 FootstepNavigation::getFootTransform(const std::string& foot_id,
                                      const std::string& world_frame_id,
-                                     const ros::Time& time,
+                                     const rclcpp::Time& time,
                                      const rclcpp::Duration& waiting_time,
                                      tf2::Transform* foot)
 {
-  tf2::Stamped<Transform> stamped_foot_transform;
+  tf2::Stamped<tf2::Transform> stamped_foot_transform;
   try
-  {
-    ivTransformListener.waitForTransform(world_frame_id, foot_id, time,
-                                         waiting_time);
-    ivTransformListener.lookupTransform(world_frame_id, foot_id, time,
-                                        stamped_foot_transform);
+  { 
+    tf2::Transform tmp;
+    
+    ivTransformBuffer->waitForTransform(foot_id, world_frame_id, time, waiting_time, nullptr);
+    tf2::fromMsg(ivTransformBuffer->lookupTransform(foot_id, world_frame_id, time).transform, tmp);
+
+    stamped_foot_transform.setData(tmp);
   }
   catch (const tf2::TransformException& e)
   {
@@ -684,8 +677,8 @@ FootstepNavigation::getFootTransform(const std::string& foot_id,
     return false;
   }
 
-  foot->setOrigin(stamped_foot_transform.getOrigin());
-  foot->setRotation(stamped_foot_transform.getRotation());
+  foot->setOrigin(tf2::Vector3(stamped_foot_transform.getOrigin().getX(), stamped_foot_transform.getOrigin().getY(), stamped_foot_transform.getOrigin().getZ()));
+  foot->setRotation(tf2::Quaternion(stamped_foot_transform.getRotation().getX(), stamped_foot_transform.getRotation().getY(), stamped_foot_transform.getRotation().getZ(), stamped_foot_transform.getRotation().getW()));
 
   return true;
 }
@@ -702,17 +695,15 @@ FootstepNavigation::performanceValid(float a_x, float a_y, float a_theta,
 }
 
 
-bool
-FootstepNavigation::performanceValid(
-  const humanoid_nav_msgs::srv::ClipFootstep& step)
-{
-  return performanceValid(step.request.step.pose.x,
-                          step.request.step.pose.y,
-                          step.request.step.pose.theta,
-                          step.response.step.pose.x,
-                          step.response.step.pose.y,
-                          step.response.step.pose.theta);
-}
+// bool FootstepNavigation::performanceValid(const humanoid_nav_msgs::srv::ClipFootstep& step)
+// {
+//   return performanceValid(step.request.step.pose.x,
+//                           step.request.step.pose.y,
+//                           step.request.step.pose.theta,
+//                           step.response.step.pose.x,
+//                           step.response.step.pose.y,
+//                           step.response.step.pose.theta);
+// }
 
 
 bool

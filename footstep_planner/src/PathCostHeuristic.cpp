@@ -160,6 +160,7 @@ PathCostHeuristic::updateMap(std::shared_ptr<gridmap_2d::GridMap2D> map)
     {
       float dist = ivMapPtr->distanceMapAtCell(x,y);
       if (dist < 0.0f)
+        printf("Distance map at %d %d out of bounds", x, y);
         // ROS_ERROR("Distance map at %d %d out of bounds", x, y);
       else if (dist <= ivInflationRadius)
         ivpGrid[x][y] = 255;
