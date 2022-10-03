@@ -22,20 +22,23 @@
 
 namespace footstep_planner
 {
-FootstepPlannerNode::FootstepPlannerNode()
-: rclcpp::Node("footstep_planner_node")
-{
-  // // provide callbacks to interact with the footstep planner:
-  // ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, std::bind(&FootstepPlanner::mapCallback, &ivFootstepPlanner, std::placeholders::_1));
-  // ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, std::bind(&FootstepPlanner::goalPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
-  // ivStartPoseSub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&FootstepPlanner::startPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
+  FootstepPlannerNode::FootstepPlannerNode() : rclcpp::Node("footstep_planner_node")
+  {
+    RCLCPP_INFO(this->get_logger(), "Node created!");
 
-  // // service:
-  // ivFootstepPlanService = this->create_service<humanoid_nav_msgs::srv::PlanFootsteps>("plan_footsteps", &FootstepPlanner::planService);
-  // ivFootstepPlanFeetService = this->create_service<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet>("plan_footsteps_feet", &FootstepPlanner::planFeetService);
-}
+    // provide callbacks to interact with the footstep planner:
+    ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, std::bind(&FootstepPlanner::mapCallback, &ivFootstepPlanner, std::placeholders::_1));
+    ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, std::bind(&FootstepPlanner::goalPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
+    ivStartPoseSub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&FootstepPlanner::startPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
+
+    // service:
+    ivFootstepPlanService = this->create_service<humanoid_nav_msgs::srv::PlanFootsteps>("plan_footsteps", std::bind(&FootstepPlanner::planService, &ivFootstepPlanner, std::placeholders::_1, std::placeholders::_2));
+    ivFootstepPlanFeetService = this->create_service<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet>("plan_footsteps_feet", std::bind(&FootstepPlanner::planFeetService, &ivFootstepPlanner, std::placeholders::_1, std::placeholders::_2));
+
+    RCLCPP_INFO(this->get_logger(), "Subscriptions and services created!");
+  }
 
 
-FootstepPlannerNode::~FootstepPlannerNode()
-{}
+  FootstepPlannerNode::~FootstepPlannerNode()
+  {}
 }

@@ -34,6 +34,8 @@ FootstepPlanner::FootstepPlanner()
   ivPathCost(0),
   ivMarkerNamespace("")
 {
+  RCLCPP_INFO(this->get_logger(), "%s created!", this->get_name());
+
   // ..publishers
   ivExpandedStatesVisPub = this->create_publisher<sensor_msgs::msg::PointCloud2>("expanded_states", 1);
   ivRandomStatesVisPub = this->create_publisher<sensor_msgs::msg::PointCloud2>("random_states", 1);
@@ -41,6 +43,8 @@ FootstepPlanner::FootstepPlanner()
   ivHeuristicPathVisPub = this->create_publisher<nav_msgs::msg::Path>("heuristic_path", 1);
   ivPathVisPub = this->create_publisher<nav_msgs::msg::Path>("path", 1);
   ivStartPoseVisPub = this->create_publisher<geometry_msgs::msg::PoseStamped>("start", 1);
+
+  RCLCPP_INFO(this->get_logger(), "Publishers created!");
 
   std::string heuristic_type;
   double diff_angle_cost;
@@ -104,6 +108,7 @@ FootstepPlanner::FootstepPlanner()
               "Exit!");
     exit(2);
   }
+
   // create footstep set
   ivEnvironmentParams.footstep_set.clear();
   double max_step_width = 0;
@@ -134,7 +139,13 @@ FootstepPlanner::FootstepPlanner()
   {
     RCLCPP_ERROR(this->get_logger(), "Step range points have different size. Exit!");
     exit(2);
+  } else if(step_range_x.size() == 0 || step_range_y.size() == 0) {
+    RCLCPP_ERROR(this->get_logger(), "step_range_x or step_range_y are empty. Exit!");
+    exit(3);
   }
+
+  RCLCPP_INFO(this->get_logger(), "Parameters declared and retrieved!");
+
   // create step range
   ivEnvironmentParams.step_range.clear();
   ivEnvironmentParams.step_range.reserve(step_range_x.size());
@@ -142,8 +153,10 @@ FootstepPlanner::FootstepPlanner()
   double max_x = 0.0;
   double max_y = 0.0;
   double cell_size = ivEnvironmentParams.cell_size;
+  RCLCPP_INFO(this->get_logger(), "for loop");
   for (int i=0; i < step_range_x.size(); ++i)
   {
+    RCLCPP_INFO(this->get_logger(), "%d", i);
     x = (double)step_range_x[i];
     y = (double)step_range_y[i];
     if (fabs(x) > max_x)
@@ -156,6 +169,8 @@ FootstepPlanner::FootstepPlanner()
   // insert first point again at the end!
   ivEnvironmentParams.step_range.push_back(ivEnvironmentParams.step_range[0]);
   ivEnvironmentParams.max_step_width = sqrt(max_x*max_x + max_y*max_y) * 1.5;
+
+  RCLCPP_INFO(this->get_logger(), "Step range created!");
 
   // initialize the heuristic
   std::shared_ptr<Heuristic> h;
@@ -232,6 +247,8 @@ FootstepPlanner::FootstepPlanner()
   {
     RCLCPP_INFO(this->get_logger(), "Search direction: backward planning");
   }
+
+  RCLCPP_INFO(this->get_logger(), "Heuristic identified and initialized!");
   setPlanner();
 }
 
@@ -513,19 +530,19 @@ FootstepPlanner::plan(float start_x, float start_y, float start_theta,
 
 
 bool
-FootstepPlanner::planService(humanoid_nav_msgs::srv::PlanFootsteps::Request &req,
-                             humanoid_nav_msgs::srv::PlanFootsteps::Response &resp)
+FootstepPlanner::planService(const std::shared_ptr<humanoid_nav_msgs::srv::PlanFootsteps::Request> req,
+                             std::shared_ptr<humanoid_nav_msgs::srv::PlanFootsteps::Response> resp)
 {
-  bool result = plan(req.start.x, req.start.y, req.start.theta,
-                     req.goal.x, req.goal.y, req.goal.theta);
+  bool result = plan(req->start.x, req->start.y, req->start.theta,
+                     req->goal.x, req->goal.y, req->goal.theta);
 
-  resp.costs = getPathCosts();
-  resp.footsteps.reserve(getPathSize());
-  resp.final_eps = ivPlannerPtr->get_final_epsilon();
-  resp.expanded_states = ivPlannerEnvironmentPtr->getNumExpandedStates();
-  extractFootstepsSrv(resp.footsteps);
+  resp->costs = getPathCosts();
+  resp->footsteps.reserve(getPathSize());
+  resp->final_eps = ivPlannerPtr->get_final_epsilon();
+  resp->expanded_states = ivPlannerEnvironmentPtr->getNumExpandedStates();
+  extractFootstepsSrv(resp->footsteps);
 
-  resp.result = result;
+  resp->result = result;
 
   // return true since service call was successful (independent from the
   // success of the planning call)
@@ -533,24 +550,23 @@ FootstepPlanner::planService(humanoid_nav_msgs::srv::PlanFootsteps::Request &req
 }
 
 bool
-FootstepPlanner::planFeetService(humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Request &req,
-                             humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Response &resp)
+FootstepPlanner::planFeetService(const std::shared_ptr<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Request> req, std::shared_ptr<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Response> resp)
 {
   // TODO check direction and change of states, force planning from scratch if does not fit
-  setStart(State(req.start_left.pose.x, req.start_left.pose.y, req.start_left.pose.theta, LEFT),
-           State(req.start_right.pose.x, req.start_right.pose.y, req.start_right.pose.theta, RIGHT));
-  setGoal(State(req.goal_left.pose.x, req.goal_left.pose.y, req.goal_left.pose.theta, LEFT),
-           State(req.goal_right.pose.x, req.goal_right.pose.y, req.goal_right.pose.theta, RIGHT));
+  setStart(State(req->start_left.pose.x, req->start_left.pose.y, req->start_left.pose.theta, LEFT),
+           State(req->start_right.pose.x, req->start_right.pose.y, req->start_right.pose.theta, RIGHT));
+  setGoal(State(req->goal_left.pose.x, req->goal_left.pose.y, req->goal_left.pose.theta, LEFT),
+           State(req->goal_right.pose.x, req->goal_right.pose.y, req->goal_right.pose.theta, RIGHT));
 
   bool result = plan(false);
 
-  resp.costs = getPathCosts();
-  resp.footsteps.reserve(getPathSize());
-  resp.final_eps = ivPlannerPtr->get_final_epsilon();
-  resp.expanded_states = ivPlannerEnvironmentPtr->getNumExpandedStates();
-  extractFootstepsSrv(resp.footsteps);
+  resp->costs = getPathCosts();
+  resp->footsteps.reserve(getPathSize());
+  resp->final_eps = ivPlannerPtr->get_final_epsilon();
+  resp->expanded_states = ivPlannerEnvironmentPtr->getNumExpandedStates();
+  extractFootstepsSrv(resp->footsteps);
 
-  resp.result = result;
+  resp->result = result;
 
   // return true since service call was successful (independent from the
   // success of the planning call)
@@ -585,8 +601,7 @@ FootstepPlanner::extractFootstepsSrv(std::vector<humanoid_nav_msgs::msg::StepTar
 
 
 void
-FootstepPlanner::goalPoseCallback(
-    const std::shared_ptr<geometry_msgs::msg::PoseStamped>& goal_pose)
+FootstepPlanner::goalPoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr goal_pose)
 {
   // update the goal states in the environment
   if (setGoal(goal_pose))
@@ -601,8 +616,7 @@ FootstepPlanner::goalPoseCallback(
 
 
 void
-FootstepPlanner::startPoseCallback(
-    const std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped>& start_pose)
+FootstepPlanner::startPoseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr start_pose)
 {
   if (setStart(start_pose->pose.pose.position.x,
                start_pose->pose.pose.position.y,
@@ -619,7 +633,7 @@ FootstepPlanner::startPoseCallback(
 
 void
 FootstepPlanner::mapCallback(
-    const std::shared_ptr<nav_msgs::msg::OccupancyGrid>& occupancy_map)
+    const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map)
 {
   std::shared_ptr<GridMap2D> map(new GridMap2D(occupancy_map));
 

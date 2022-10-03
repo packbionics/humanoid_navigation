@@ -26,6 +26,8 @@ find_package(nav_msgs REQUIRED)
 
 find_package(OpenCV REQUIRED)
 
+set(gridmap_2d_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 ################################################################################
 # Build
 ################################################################################

@@ -21,13 +21,17 @@
 #include <footstep_planner/FootstepPlannerNode.h>
 #include <rclcpp/rclcpp.hpp>
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
+
   rclcpp::init(argc, argv);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "ROS 2 initialized!");
 
-  // footstep_planner::FootstepPlannerNode planner;
+  auto node = std::make_shared<footstep_planner::FootstepPlannerNode>();
 
-  rclcpp::spin(std::make_shared<footstep_planner::FootstepPlannerNode>());
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Spinning node...");
+  rclcpp::spin(node);
 
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "ROS 2 shutting down...");
+  rclcpp::shutdown();
   return 0;
 }

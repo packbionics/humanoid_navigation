@@ -40,11 +40,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-// #include <tf/tf.h>
+
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
-// #include <XmlRpcValue.h>
-// #include <XmlRpcException.h>
 
 #include <tf2/utils.h>
 
@@ -100,12 +98,10 @@ public:
   bool replan();
 
   /// @brief Service handle to plan footsteps.
-  bool planService(humanoid_nav_msgs::srv::PlanFootsteps::Request &req,
-                   humanoid_nav_msgs::srv::PlanFootsteps::Response &resp);
+  bool planService(const std::shared_ptr<humanoid_nav_msgs::srv::PlanFootsteps::Request> req, std::shared_ptr<humanoid_nav_msgs::srv::PlanFootsteps::Response> resp);
 
   /// @brief Service handle to plan footsteps.
-  bool planFeetService(humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Request &req,
-                   humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Response &resp);
+  bool planFeetService(const std::shared_ptr<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Request> req, std::shared_ptr<humanoid_nav_msgs::srv::PlanFootstepsBetweenFeet::Response> resp);
 
   /**
    * @brief Sets the goal pose as two feet (left / right)
@@ -178,7 +174,7 @@ public:
    * @return True if the two foot poses have been set successfully.
    */
   void goalPoseCallback(
-      const std::shared_ptr<geometry_msgs::msg::PoseStamped>& goal_pose);
+      const geometry_msgs::msg::PoseStamped::SharedPtr goal_pose);
   /**
    * @brief Callback to set the start pose as a robot pose centered
    * between two feet. If the goal pose has been set previously the
@@ -189,14 +185,14 @@ public:
    * @return True if the two foot poses have been set successfully.
    */
   void startPoseCallback(
-      const std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped>& start_pose);
+      const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr start_pose);
 
   /**
    * @brief Callback to set the map.
    *
    * Subscribed to 'map'.
    */
-  void mapCallback(const std::shared_ptr<nav_msgs::msg::OccupancyGrid>& occupancy_map);
+  void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map);
 
   /**
    * @brief Clear the footstep path visualization from a previous planning
