@@ -73,7 +73,7 @@ set(FOOTSTEP_PLANNER_FILES
 
 add_library(${PROJECT_NAME} ${FOOTSTEP_PLANNER_FILES})
 target_link_libraries(${PROJECT_NAME} ${SBPL_LIBRARIES} ${Boost_LIBRARIES} ${Bullet_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${gridmap_2d_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
 ament_target_dependencies(${PROJECT_NAME}
   "geometry_msgs"
   "nav_msgs"

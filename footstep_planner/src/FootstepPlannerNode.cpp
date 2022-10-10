@@ -28,7 +28,7 @@ namespace footstep_planner
 
     // provide callbacks to interact with the footstep planner:
     ivGridMapSub = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, std::bind(&FootstepPlanner::mapCallback, &ivFootstepPlanner, std::placeholders::_1));
-    ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal", 1, std::bind(&FootstepPlanner::goalPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
+    ivGoalPoseSub = this->create_subscription<geometry_msgs::msg::PoseStamped>("goal_pose", 1, std::bind(&FootstepPlanner::goalPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
     ivStartPoseSub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&FootstepPlanner::startPoseCallback, &ivFootstepPlanner, std::placeholders::_1));
 
     // service:

@@ -85,12 +85,29 @@ FootstepPlanner::FootstepPlanner()
   ivChangedCellsLimit = this->declare_parameter("changed_cells_limit", 20000);
   ivFootSeparation = this->declare_parameter("foot/separation", 0.1);
 
-  this->declare_parameter("footsteps/x", std::vector<double>());
-  this->declare_parameter("footsteps/y", std::vector<double>());
-  this->declare_parameter("footsteps/theta", std::vector<double>());
+  std::vector<double> tmp;
 
-  this->declare_parameter("step_range/x", std::vector<double>());
-  this->declare_parameter("step_range/y", std::vector<double>());
+  double default_footsteps_x[] = {0.00, 0.22, 0.00,-0.08, 0.12, 0.15, 0.08,-0.04,-0.10, 0.00, 0.15, 0.12, 0.12, 0.06};
+  double default_footsteps_y[] = {0.14, 0.14, 0.26, 0.12, 0.22, 0.11, 0.22, 0.22, 0.14, 0.12, 0.14, 0.12, 0.18, 0.14};
+  double default_footsteps_theta[] = {0.00, 0.00, 0.00, 0.70, 0.30,-0.40, 0.00, 0.30, 0.00, 0.00, 0.00, 0.00, 0.00,-0.25};
+
+  tmp = std::vector(default_footsteps_x, default_footsteps_x + 14);
+  this->declare_parameter("footsteps/x", tmp);
+
+  tmp = std::vector(default_footsteps_y, default_footsteps_y + 14);
+  this->declare_parameter("footsteps/y", tmp);
+
+  tmp = std::vector(default_footsteps_theta, default_footsteps_theta + 14);
+  this->declare_parameter("footsteps/theta", tmp);
+
+  double default_step_range_x[] = {0.22, 0.22,-0.10,-0.10};
+  double default_step_range_y[] = {0.22, 0.22,-0.10,-0.10};
+
+  tmp = std::vector(default_step_range_x, default_step_range_x + 5);
+  this->declare_parameter("step_range/x", tmp);
+
+  tmp = std::vector(default_step_range_y, default_step_range_y + 5);
+  this->declare_parameter("step_range/y", tmp);
 
   // footstep discretization
   std::vector<double> footsteps_x;
@@ -153,10 +170,9 @@ FootstepPlanner::FootstepPlanner()
   double max_x = 0.0;
   double max_y = 0.0;
   double cell_size = ivEnvironmentParams.cell_size;
-  RCLCPP_INFO(this->get_logger(), "for loop");
+
   for (int i=0; i < step_range_x.size(); ++i)
   {
-    RCLCPP_INFO(this->get_logger(), "%d", i);
     x = (double)step_range_x[i];
     y = (double)step_range_y[i];
     if (fabs(x) > max_x)
@@ -169,8 +185,6 @@ FootstepPlanner::FootstepPlanner()
   // insert first point again at the end!
   ivEnvironmentParams.step_range.push_back(ivEnvironmentParams.step_range[0]);
   ivEnvironmentParams.max_step_width = sqrt(max_x*max_x + max_y*max_y) * 1.5;
-
-  RCLCPP_INFO(this->get_logger(), "Step range created!");
 
   // initialize the heuristic
   std::shared_ptr<Heuristic> h;
@@ -248,7 +262,6 @@ FootstepPlanner::FootstepPlanner()
     RCLCPP_INFO(this->get_logger(), "Search direction: backward planning");
   }
 
-  RCLCPP_INFO(this->get_logger(), "Heuristic identified and initialized!");
   setPlanner();
 }
 
@@ -632,9 +645,7 @@ FootstepPlanner::startPoseCallback(const geometry_msgs::msg::PoseWithCovarianceS
 
 
 void
-FootstepPlanner::mapCallback(
-    const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map)
-{
+FootstepPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr occupancy_map) {
   std::shared_ptr<GridMap2D> map(new GridMap2D(occupancy_map));
 
   // new map: update the map information

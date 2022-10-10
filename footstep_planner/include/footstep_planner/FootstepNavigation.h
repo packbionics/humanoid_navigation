@@ -21,7 +21,6 @@
 #ifndef FOOTSTEP_PLANNER_FOOTSTEPNAVIGATION_H_
 #define FOOTSTEP_PLANNER_FOOTSTEPNAVIGATION_H_
 
-//#include <actionlib/client/simple_action_client.h>
 #include <footstep_planner/FootstepPlanner.h>
 #include <footstep_planner/State.h>
 #include <geometry_msgs/msg/pose.hpp>
