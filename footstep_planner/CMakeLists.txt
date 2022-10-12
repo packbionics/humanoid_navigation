@@ -4,45 +4,47 @@
 cmake_minimum_required(VERSION 3.5)
 project(footstep_planner)
 
-# # Default to C99
-# if(NOT CMAKE_C_STANDARD)
-#   set(CMAKE_C_STANDARD 99)
-# endif()
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
 
-# # Default to C++14
-# if(NOT CMAKE_CXX_STANDARD)
-#   set(CMAKE_CXX_STANDARD 14)
-# endif()
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
-# if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#   add_compile_options(-Wall -Wextra -Wpedantic)
-# endif()
-
-set(GRIDMAP_SHARE_DIR "/home/anthony/dev-ws/install/gridmap_2d/share")
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 ################################################################################
 # Find packages and libraries for system dependencies
 ################################################################################
+find_package(ament_cmake REQUIRED)
+
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclpy REQUIRED)
+
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(humanoid_nav_msgs REQUIRED)
+
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+
 find_package(angles REQUIRED)
-find_package(gridmap_2d REQUIRED)
-find_package(rclcpp_action REQUIRED)
 find_package(Boost REQUIRED)
-find_package(Bullet REQUIRED)
 
 find_package(OpenCV REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(SBPL REQUIRED sbpl)
+find_package(sbpl REQUIRED)
+
 include_directories(${SBPL_INCLUDE_DIRS})
 link_directories(${SBPL_LIBRARY_DIRS})
 
@@ -53,8 +55,6 @@ include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
   ${SBPL_INCLUDE_DIRS}
-  ${Bullet_INCLUDE_DIRS}
-  ${GRIDMAP_SHARE_DIR}
 )
 
 set(FOOTSTEP_PLANNER_FILES 
@@ -72,14 +72,13 @@ set(FOOTSTEP_PLANNER_FILES
 )
 
 add_library(${PROJECT_NAME} ${FOOTSTEP_PLANNER_FILES})
-target_link_libraries(${PROJECT_NAME} ${SBPL_LIBRARIES} ${Boost_LIBRARIES} ${Bullet_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${SBPL_LIBRARIES} ${Boost_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
 ament_target_dependencies(${PROJECT_NAME}
   "geometry_msgs"
   "nav_msgs"
   "rclcpp"
   "rclpy"
-  "gridmap_2d"
   "angles"
   "sensor_msgs"
   "visualization_msgs"
@@ -91,14 +90,13 @@ ament_target_dependencies(${PROJECT_NAME}
 )
 
 add_executable(footstep_planner_node src/footstep_planner.cpp)
-target_include_directories(footstep_planner_node PUBLIC ${GRIDMAP_SHARE_DIR} ${HUMANOID_NAV_INTERFACES_DIR} ${Boost_INCLUDE_DIRS})
-target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES} ${OpenCV_LIBRARIES} "/home/anthony/dev-ws/install/gridmap_2d/lib/libgridmap_2d.a")
+target_include_directories(footstep_planner_node PUBLIC ${HUMANOID_NAV_INTERFACES_DIR} ${Boost_INCLUDE_DIRS})
+target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES} ${OpenCV_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libgridmap_2d.a)
 ament_target_dependencies(footstep_planner_node
   "geometry_msgs"
   "nav_msgs"
   "rclcpp"
   "rclpy"
-  "gridmap_2d"
   "angles"
   "sensor_msgs"
   "visualization_msgs"
