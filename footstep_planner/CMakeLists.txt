@@ -91,7 +91,7 @@ ament_target_dependencies(${PROJECT_NAME}
 
 add_executable(footstep_planner_node src/footstep_planner.cpp)
 target_include_directories(footstep_planner_node PUBLIC ${HUMANOID_NAV_INTERFACES_DIR} ${Boost_INCLUDE_DIRS})
-target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES} ${OpenCV_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libgridmap_2d.a)
+target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libgridmap_2d.a)
 ament_target_dependencies(footstep_planner_node
   "geometry_msgs"
   "nav_msgs"
@@ -105,6 +105,7 @@ ament_target_dependencies(footstep_planner_node
   "tf2_ros"
   "tf2_geometry_msgs"
   "rclcpp_action"
+  "OpenCV"
 )
 
 
