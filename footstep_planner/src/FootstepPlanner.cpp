@@ -91,22 +91,22 @@ FootstepPlanner::FootstepPlanner()
   double default_footsteps_y[] = {0.14, 0.14, 0.26, 0.12, 0.22, 0.11, 0.22, 0.22, 0.14, 0.12, 0.14, 0.12, 0.18, 0.14};
   double default_footsteps_theta[] = {0.00, 0.00, 0.00, 0.70, 0.30,-0.40, 0.00, 0.30, 0.00, 0.00, 0.00, 0.00, 0.00,-0.25};
 
-  tmp = std::vector(default_footsteps_x, default_footsteps_x + 14);
+  tmp = std::vector<double>(default_footsteps_x, default_footsteps_x + 14);
   this->declare_parameter("footsteps/x", tmp);
 
-  tmp = std::vector(default_footsteps_y, default_footsteps_y + 14);
+  tmp = std::vector<double>(default_footsteps_y, default_footsteps_y + 14);
   this->declare_parameter("footsteps/y", tmp);
 
-  tmp = std::vector(default_footsteps_theta, default_footsteps_theta + 14);
+  tmp = std::vector<double>(default_footsteps_theta, default_footsteps_theta + 14);
   this->declare_parameter("footsteps/theta", tmp);
 
   double default_step_range_x[] = {0.22, 0.22,-0.10,-0.10};
   double default_step_range_y[] = {0.22, 0.22,-0.10,-0.10};
 
-  tmp = std::vector(default_step_range_x, default_step_range_x + 5);
+  tmp = std::vector<double>(default_step_range_x, default_step_range_x + 5);
   this->declare_parameter("step_range/x", tmp);
 
-  tmp = std::vector(default_step_range_y, default_step_range_y + 5);
+  tmp = std::vector<double>(default_step_range_y, default_step_range_y + 5);
   this->declare_parameter("step_range/y", tmp);
 
   // footstep discretization

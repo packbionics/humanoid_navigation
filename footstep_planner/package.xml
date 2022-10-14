@@ -33,9 +33,7 @@
   <depend>humanoid_nav_msgs</depend>
   <depend>tf2</depend>
   <depend>angles</depend>
-  <depend>gridmap_2d</depend>
   <depend>libopencv-dev</depend>
-  <depend>sbpl</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
