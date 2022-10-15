@@ -24,10 +24,8 @@
 #define DEBUG_HASH 0
 #define DEBUG_TIME 0
 
-
 #include <gridmap_2d/GridMap2D.h>
 #include <angles/angles.h>
-//#include <tf/tf.h>
 
 #include <math.h>
 

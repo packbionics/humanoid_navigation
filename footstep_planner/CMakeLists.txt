@@ -40,10 +40,12 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(angles REQUIRED)
 find_package(Boost REQUIRED)
 
-find_package(OpenCV REQUIRED)
-
 find_package(PkgConfig REQUIRED)
 find_package(sbpl REQUIRED)
+
+find_package(OpenCV REQUIRED)
+
+find_package(gridmap_2d REQUIRED)
 
 include_directories(${SBPL_INCLUDE_DIRS})
 link_directories(${SBPL_LIBRARY_DIRS})
@@ -53,7 +55,6 @@ link_directories(${SBPL_LIBRARY_DIRS})
 ################################################################################
 include_directories(
   include
-  ${OpenCV_INCLUDE_DIRS}
   ${SBPL_INCLUDE_DIRS}
 )
 
@@ -72,7 +73,7 @@ set(FOOTSTEP_PLANNER_FILES
 )
 
 add_library(${PROJECT_NAME} ${FOOTSTEP_PLANNER_FILES})
-target_link_libraries(${PROJECT_NAME} ${SBPL_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${SBPL_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
 ament_target_dependencies(${PROJECT_NAME}
   "geometry_msgs"
@@ -87,11 +88,13 @@ ament_target_dependencies(${PROJECT_NAME}
   "tf2_ros"
   "tf2_geometry_msgs"
   "rclcpp_action"
+  "OpenCV"
+  "gridmap_2d"
 )
 
 add_executable(footstep_planner_node src/footstep_planner.cpp)
-target_include_directories(footstep_planner_node PUBLIC ${HUMANOID_NAV_INTERFACES_DIR} ${Boost_INCLUDE_DIRS})
-target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/lib/libgridmap_2d.a)
+target_include_directories(footstep_planner_node PUBLIC)
+target_link_libraries(footstep_planner_node ${PROJECT_NAME} ${SBPL_LIBRARIES})
 ament_target_dependencies(footstep_planner_node
   "geometry_msgs"
   "nav_msgs"
@@ -106,6 +109,7 @@ ament_target_dependencies(footstep_planner_node
   "tf2_geometry_msgs"
   "rclcpp_action"
   "OpenCV"
+  "gridmap_2d"
 )
 
 

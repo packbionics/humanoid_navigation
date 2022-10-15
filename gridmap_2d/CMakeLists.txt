@@ -26,22 +26,24 @@ find_package(nav_msgs REQUIRED)
 
 find_package(OpenCV REQUIRED)
 
-set(gridmap_2d_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 ################################################################################
 # Build
 ################################################################################
 add_library(${PROJECT_NAME} src/GridMap2D.cpp)
+
+# Add include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-  ${OpenCV_INCLUDE_DIRS})
+  $<INSTALL_INTERFACE:include>)
 
+# Add library dependencies
 ament_target_dependencies(${PROJECT_NAME}
   "rclcpp"
   "nav_msgs"
   "OpenCV"
 )
+
+ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 ################################################################################
 # Install
@@ -50,8 +52,17 @@ install(TARGETS ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  INCLUDES DESTINATION include
+)
+
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION share/${PROJECT_NAME}
+  DESTINATION include/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -64,5 +75,7 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_include_directories(include)
 
 ament_package()
