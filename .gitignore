@@ -9,6 +9,9 @@ bin/
 msg_gen/
 srv_gen/
 
+# Ignore VS Code configs
+.vscode/
+
 # SBPL output:
 debug.txt
 envdebug.txt

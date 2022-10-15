@@ -1,7 +1,7 @@
 version: "3.9"
 services:
     footstep_planner:
-        image: "run_footstep_planner"
+        image: "footstep_planner:foxy"
         volumes:
             - ${XAUTHORITY}:/tmp/.XAuthority
             - /tmp/.X11-unix:/tmp/.X11-unix
@@ -10,3 +10,4 @@ services:
             DISPLAY: "${DISPLAY}"
         stdin_open: true
         tty: true
+        privileged: true
